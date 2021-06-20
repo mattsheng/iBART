@@ -24,10 +24,6 @@ install_github("mattsheng/iBART")
 ## Reproduce Section 3.4
 - Run `Sec_3.4_main.R` to reproduce results in Section 3.4
 
-## Reproduce Section 4
-- Run `Sec_4_full_data_main.R` to reproduce the results trained on full data.
-- Run `Sec_4_out_sample_main.R` to reproduce the out-of-sample results.
-
 
 # R Session Info
 ```
