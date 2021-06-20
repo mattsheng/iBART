@@ -22,7 +22,7 @@ install_github("mattsheng/iBART")
 
 # Reproduce results in OIS paper
 ## Reproduce Section 3.4
-- Run `Sec_3.4_main.R` to reproduce results in Section 3.4
+- Run `demo("Sec_3.4_main")` to reproduce results in Section 3.4
 
 
 # R Session Info
