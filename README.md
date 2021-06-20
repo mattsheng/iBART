@@ -2,6 +2,7 @@
 An R package for iterative BART for Variable and Operator Selection with Operator Induced Structure (OIS).
 
 Copyright (C) Shengbin Ye and Meng Li
+
 Department of Statistics, Rice Univerisity.
 
 # Setup Instructions
