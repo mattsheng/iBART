@@ -68,6 +68,7 @@ for (j in 1:50) {
                          K = 4,
                          AIC = TRUE,
                          standardize = FALSE,
+                         count = j,
                          seed = 99)
   BART_gen_size[j, ] <- iBART_results$iBART_gen_size
   BART_sel_size[j, ] <- iBART_results$iBART_sel_size
