@@ -1,5 +1,5 @@
-set.seed(1234) # seed = 123 for p = 10, 20, 50, 100
-               # seed = 1234 for p = 200
+set.seed(123) # seed = 123 for p = 10, 20, 50, 100
+              # seed = 1234 for p = 200
 options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
 library(iBART)
 
@@ -68,8 +68,6 @@ for (j in 1:50) {
                          K = 4,
                          AIC = TRUE,
                          standardize = FALSE,
-                         writeLog = FALSE,
-                         count = j,
                          seed = 99)
   BART_gen_size[j, ] <- iBART_results$iBART_gen_size
   BART_sel_size[j, ] <- iBART_results$iBART_sel_size

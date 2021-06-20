@@ -42,6 +42,42 @@
 #' \item{Lzero_out_sample_RMSE}{Out of sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K} if \code{out_sample == TRUE}.}
 #' \item{Lzero_aic_model}{The best \eqn{l_0}-penalized regression model selected by AIC.}
 #' \item{Lzero_aic_names}{The best \eqn{k}D descriptors where \eqn{1 \le k \le K} is chosen via AIC.}
+#'
+#' @author
+#' Shengbin Ye and Meng Li
+#'
+#' @references
+#' Shengbin Ye, Meng Li (2021). Operator-induced structural variable selection with applications to materials genomes.
+#' Submitted
+#'
+#' @examples
+#' set.seed(123)
+#' options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
+#' library(iBART)
+#' n <- 250
+#' p <- 10
+#'
+#' X <- matrix(runif(n * p, min = -1, max = 1), nrow = n, ncol = p)
+#' colnames(X) <- paste("x.", seq(from = 1, to = p, by = 1), sep = "")
+#' y <- 15*(exp(X[,1])-exp(X[,2]))^2 + 20*sin(pi*X[,3]*X[,4])
+#'        + rnorm(n, mean = 0, sd = 0.5)
+#' \dontrun{
+#' iBART_results <- iBART(X = X, y = y,
+#'                        head = colnames(X),
+#'                        dimen = NULL,
+#'                        opt = 1, # unary operator first
+#'                        sin_cos = TRUE,
+#'                        apply_pos_opt_on_neg_x = FALSE,
+#'                        iter = 3,
+#'                        Lzero = TRUE,
+#'                        K = 4,
+#'                        AIC = TRUE,
+#'                        standardize = FALSE,
+#'                        seed = 99)
+#' # Correct descriptor names are (exp(x.1)-exp(x.2))^2 and sin(pi*x.3*x.4)
+#' iBART_results$descriptor_names
+#' }
+
 
 iBART <- function(X = NULL, y = NULL,
                   head = NULL,
