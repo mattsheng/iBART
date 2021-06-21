@@ -17,7 +17,7 @@ Department of Statistics, Rice Univerisity.
 Use the following code to install `iBART` from GitHub:
 ```
 library(devtools)
-install_github("mattsheng/iBART")
+install_github("mattsheng/iBART", ref = "master")
 ```
 
 # Reproduce results in OIS paper
