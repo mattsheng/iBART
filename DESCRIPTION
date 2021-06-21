@@ -4,7 +4,7 @@ Version: 0.0.1.5
 Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre"), email = "sy53@rice.edu", comment = c(ORCID = "0000-0001-8767-2595")),
              person("Meng", "Li", role = "aut", email = "meng@rice.edu"))
 Description: An iterative method for constructing and selecting complex nonlinear descriptors that reveals the underlying nonlinear association between the response and the predictors.
-License: GPL-2
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
