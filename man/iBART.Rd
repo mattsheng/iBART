@@ -48,7 +48,7 @@ iBART(
 
 \item{num_permute_samples}{BART parameter: number of permutations of the response to be made to generate the “null” permutation distribution. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_permute_samples = 50}.}
 
-\item{opt}{If \code{opt = 1}, uniary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.}
+\item{opt}{If \code{opt = 1}, unary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.}
 
 \item{sin_cos}{Logical flag for using \eqn{sin(\pi*x)} and \eqn{cos(\pi*x)} to generate descriptors. This is useful if you think there is periodic relationship between predictors and response. Default is \code{sin_cos = FALSE}.}
 
@@ -86,12 +86,48 @@ A list of iBART output. \item{X_selected}{The values of the iBART selected descr
 \item{LS_in_sample_RMSE}{In sample RMSE of the least square estimators on the iBART selected descriptors.}
 \item{LS_out_sample_RMSE}{Out of sample RMSE of the least square estimators on the iBART selected descriptors if \code{out_sample == TRUE}.}
 \item{Lzero_model}{The \eqn{l_0}-penalized regression model fitted on the iBART selected descriptors for \eqn{1 \le k \le K}.}
-\item{Lzero_names}{The best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
+\item{Lzero_names}{The name of the best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 \item{Lzero_in_sample_RMSE}{In sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 \item{Lzero_out_sample_RMSE}{Out of sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K} if \code{out_sample == TRUE}.}
 \item{Lzero_aic_model}{The best \eqn{l_0}-penalized regression model selected by AIC.}
 \item{Lzero_aic_names}{The best \eqn{k}D descriptors where \eqn{1 \le k \le K} is chosen via AIC.}
+\item{runtime}{Runtime in second.}
 }
 \description{
 iBART descriptor selection
+}
+\examples{
+set.seed(123)
+options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
+library(iBART)
+n <- 250
+p <- 10
+
+X <- matrix(runif(n * p, min = -1, max = 1), nrow = n, ncol = p)
+colnames(X) <- paste("x.", seq(from = 1, to = p, by = 1), sep = "")
+y <- 15*(exp(X[,1])-exp(X[,2]))^2 + 20*sin(pi*X[,3]*X[,4])
+       + rnorm(n, mean = 0, sd = 0.5)
+\dontrun{
+iBART_results <- iBART(X = X, y = y,
+                       head = colnames(X),
+                       dimen = NULL,
+                       opt = 1, # unary operator first
+                       sin_cos = TRUE,
+                       apply_pos_opt_on_neg_x = FALSE,
+                       iter = 3,
+                       Lzero = TRUE,
+                       K = 4,
+                       AIC = TRUE,
+                       standardize = FALSE,
+                       seed = 99)
+# Correct descriptor names are (exp(x.1)-exp(x.2))^2 and sin(pi*x.3*x.4)
+iBART_results$descriptor_names
+}
+}
+\references{
+Shengbin Ye, Meng Li (2021). Operator-induced structural variable selection with applications to materials genomes.
+Submitted
+}
+\author{
+Shengbin Ye and Meng Li
 }

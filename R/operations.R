@@ -7,21 +7,19 @@ dataprocessing <- function(dat) {
   # Remove X cols with duplicated data
   temp <- round(X, digits = 6)
   dup_index <- duplicated(temp, MARGIN = 2)
-  if (any(dup_index == TRUE)) {
-    X <- X[, !dup_index]
-    head <- head[!dup_index]
-    if (is.null(dimen)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[!dup_index]
-    }
+  X <- as.matrix(X[, !dup_index])
+  head <- head[!dup_index]
+  if (is.null(dimen)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!dup_index]
   }
 
   # Remove columns without variability
   s <- apply(X, 2, function(x) sd(x))
   no_var_index <- which(s == 0)
   if (length(no_var_index) > 0) {
-    X <- X[, -no_var_index]
+    X <- as.matrix(X[, -no_var_index])
     head <- head[-no_var_index]
     if (is.null(dimen)) {
       dimen <- NULL
@@ -34,7 +32,7 @@ dataprocessing <- function(dat) {
   ind_inf <- apply(X, 2, function(x) any(abs(x) == Inf))
   rm_ind <- which(ind_inf == TRUE)
   if (length(rm_ind) > 0) {
-    X <- X[, -rm_ind]
+    X <- as.matrix(X[, -rm_ind])
     head <- head[-rm_ind]
     if (is.null(dimen)) {
       dimen <- NULL
@@ -52,7 +50,7 @@ dataprocessing <- function(dat) {
 
 ##### Binary Operations #####
 ADD <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
 
@@ -93,7 +91,7 @@ ADD <- function(dat) {
 
     idx_empty <- which(head == "empty")
     if (length(idx_empty) > 0) {
-      X_tmp <- X_tmp[, -idx_empty]
+      X_tmp <- as.matrix(X_tmp[, -idx_empty])
       head <- head[-idx_empty]
       dimen <- dimen[-idx_empty]
     }
@@ -106,7 +104,7 @@ ADD <- function(dat) {
 }
 
 MINUS <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
 
@@ -147,7 +145,7 @@ MINUS <- function(dat) {
 
     idx_empty <- which(head == "empty")
     if (length(idx_empty) > 0) {
-      X_tmp <- X_tmp[, -idx_empty]
+      X_tmp <- as.matrix(X_tmp[, -idx_empty])
       head <- head[-idx_empty]
       dimen <- dimen[-idx_empty]
     }
@@ -160,7 +158,7 @@ MINUS <- function(dat) {
 }
 
 MULTI <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
 
@@ -214,7 +212,7 @@ MULTI <- function(dat) {
 }
 
 DIVD <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
 
@@ -248,12 +246,12 @@ DIVD <- function(dat) {
     idx_empty_2 <- which(head_2 == "empty")
 
     if (length(idx_empty_1) != 0) {
-      X_tmp_1 <- X_tmp_1[, -idx_empty_1]
+      X_tmp_1 <- as.matrix(X_tmp_1[, -idx_empty_1])
       head_1 <- head_1[-idx_empty_1]
     }
 
     if (length(idx_empty_2) != 0) {
-      X_tmp_2 <- X_tmp_2[, -idx_empty_2]
+      X_tmp_2 <- as.matrix(X_tmp_2[, -idx_empty_2])
       head_2 <- head_2[-idx_empty_2]
     }
     dimen_1 <- dimen_2 <- NULL
@@ -314,13 +312,13 @@ DIVD <- function(dat) {
     idx_empty_2 <- which(head_2 == "empty")
 
     if (length(idx_empty_1) != 0) {
-      X_tmp_1 <- X_tmp_1[, -idx_empty_1]
+      X_tmp_1 <- as.matrix(X_tmp_1[, -idx_empty_1])
       head_1 <- head_1[-idx_empty_1]
       dimen_1 <- dimen_1[-idx_empty_1]
     }
 
     if (length(idx_empty_2) != 0) {
-      X_tmp_2 <- X_tmp_2[, -idx_empty_2]
+      X_tmp_2 <- as.matrix(X_tmp_2[, -idx_empty_2])
       head_2 <- head_2[-idx_empty_2]
       dimen_2 <- dimen_2[-idx_empty_2]
     }
@@ -337,7 +335,7 @@ DIVD <- function(dat) {
 }
 
 MINUS_ABS <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
 
@@ -378,7 +376,7 @@ MINUS_ABS <- function(dat) {
 
     idx_empty <- which(head == "empty")
     if (length(idx_empty) > 0) {
-      X_tmp <- X_tmp[, -idx_empty]
+      X_tmp <- as.matrix(X_tmp[, -idx_empty])
       head <- head[-idx_empty]
       dimen <- dimen[-idx_empty]
     }
@@ -391,47 +389,51 @@ MINUS_ABS <- function(dat) {
 }
 
 binary <- function(data, sin_cos) {
-  # Binary operations
-  data_add <- ADD(data)
-  data_minus <- MINUS(data)
-  data_multi <- MULTI(data)
-  data_divd <- DIVD(data)
-  # data_abs_minus = MINUS_ABS(data)
+  p <- ncol(as.matrix(data$X))
+  if (p < 2) {
+    stop("X has less than 2 columns. Need at least 2 columns to perform binary operations!")
+  } else {
+    # Binary operations
+    data_add <- ADD(data)
+    data_minus <- MINUS(data)
+    data_multi <- MULTI(data)
+    data_divd <- DIVD(data)
+    # data_abs_minus = MINUS_ABS(data)
 
-  X <- cbind(data_add$X, data_minus$X, data_multi$X, data_divd$X)
-  head <- c(data_add$head, data_minus$head, data_multi$head, data_divd$head)
-  dimen <- c(data_add$dimen, data_minus$dimen, data_multi$dimen, data_divd$dimen)
-  Phi <- list(X = X, head = unname(head), dimen = dimen)
+    X <- cbind(data_add$X, data_minus$X, data_multi$X, data_divd$X)
+    head <- c(data_add$head, data_minus$head, data_multi$head, data_divd$head)
+    dimen <- c(data_add$dimen, data_minus$dimen, data_multi$dimen, data_divd$dimen)
+    Phi <- list(X = X, head = unname(head), dimen = dimen)
 
-  # Combine datasets
-  if(sin_cos == FALSE){
-    data_abs <- ABS(Phi)
-    X <- cbind(X, data_abs$X)
-    head <- c(head, data_abs$head)
-    dimen <- c(dimen, data_abs$dimen)
+    # Combine datasets
+    if(sin_cos == FALSE){
+      data_abs <- ABS(Phi)
+      X <- cbind(X, data_abs$X)
+      head <- c(head, data_abs$head)
+      dimen <- c(dimen, data_abs$dimen)
+    } else{
+      data_abs_minus <- MINUS_ABS(data)
+      X <- cbind(X, data_abs_minus$X)
+      head <- c(head, data_abs_minus$head)
+      dimen <- c(dimen, data_abs_minus$dimen)
+    }
     Phi <- list(X = X, head = unname(head), dimen = dimen)
-  } else{
-    data_abs_minus <- MINUS_ABS(data)
-    X <- cbind(X, data_abs_minus$X)
-    head <- c(head, data_abs_minus$head)
-    dimen <- c(dimen, data_abs_minus$dimen)
-    Phi <- list(X = X, head = unname(head), dimen = dimen)
+
+    # Remove redundant descriptors
+    Phi <- dataprocessing(Phi)
+    return(Phi)
   }
-
-  # Remove redundant descriptors
-  Phi <- dataprocessing(Phi)
-  return(Phi)
 }
 
-##### Uniary Operations #####
+##### Unary Operations #####
 ABS <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) abs(x))
-  head <- sapply(head_in, function(x) paste("|", x, "|", sep = ""))
+  head <- sapply(head_in, function(x) paste("abs(", x, ")", sep = ""))
   dimen <- dimen_in
 
   data_out <- list(X = X_tmp,
@@ -441,7 +443,7 @@ ABS <- function(dat) {
 }
 
 SQRT <- function(dat, apply_pos_opt_on_neg_x) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -457,9 +459,9 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
   neg_col <- apply(X, 2, function(x) any(x < 0))
   if (any(neg_col) == TRUE) {
     if (apply_pos_opt_on_neg_x == TRUE){
-      head[neg_col] <- paste("|", head_in[neg_col], "|^0.5", seq = "")
+      head[neg_col] <- paste("abs(", head_in[neg_col], ")^0.5", seq = "")
     } else {
-      X_tmp <- X_tmp[, !neg_col]
+      X_tmp <- as.matrix(X_tmp[, !neg_col])
       head <- head[!neg_col]
       if (is.null(dimen_in)) {
         dimen <- NULL
@@ -467,12 +469,11 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
         dimen <- dimen[!neg_col]
       }
     }
-
   }
 
   NA_col <- apply(X_tmp, 2, anyNA)
   if (any(NA_col == TRUE)) {
-    X_tmp <- X_tmp[, !NA_col]
+    X_tmp <- as.matrix(X_tmp[, !NA_col])
     head <- head[!NA_col]
     if (is.null(dimen_in)) {
       dimen <- NULL
@@ -488,13 +489,13 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
 }
 
 INV <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
 
   X_tmp <- suppressWarnings(apply(X, 2, function(x) x^(-1)))
-  head <- sapply(head_in, function(x) paste(x, "^-1", sep = ""))
+  head <- sapply(head_in, function(x) paste(x, "^(-1)", sep = ""))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
@@ -503,7 +504,7 @@ INV <- function(dat) {
 
   NA_col <- apply(X_tmp, 2, anyNA)
   if (any(NA_col == TRUE)) {
-    X_tmp <- X_tmp[, !NA_col]
+    X_tmp <- as.matrix(X_tmp[, !NA_col])
     head <- head[!NA_col]
     if (is.null(dimen_in)) {
       dimen <- NULL
@@ -519,7 +520,7 @@ INV <- function(dat) {
 }
 
 SQRE <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -556,7 +557,7 @@ SQRE <- function(dat) {
 # }
 
 LOG <- function(dat, apply_pos_opt_on_neg_x) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -572,9 +573,9 @@ LOG <- function(dat, apply_pos_opt_on_neg_x) {
   neg_col <- apply(X, 2, function(x) any(x < 0))
   if (any(neg_col) == TRUE) {
     if (apply_pos_opt_on_neg_x == TRUE){
-      head[neg_col] <- paste("log(|", head_in[neg_col], "|)", seq = "")
+      head[neg_col] <- paste("log(abs(", head_in[neg_col], "))", seq = "")
     } else {
-      X_tmp <- X[, !neg_col]
+      X_tmp <- as.matrix(X[, !neg_col])
       head <- head[!neg_col]
       if (is.null(dimen_in)) {
         dimen <- NULL
@@ -582,12 +583,11 @@ LOG <- function(dat, apply_pos_opt_on_neg_x) {
         dimen <- dimen[!neg_col]
       }
     }
-
   }
 
   NA_col <- apply(X_tmp, 2, anyNA)
   if (any(NA_col == TRUE)) {
-    X_tmp <- X_tmp[, !NA_col]
+    X_tmp <- as.matrix(X_tmp[, !NA_col])
     head <- head[!NA_col]
     if (is.null(dimen_in)) {
       dimen <- NULL
@@ -603,7 +603,7 @@ LOG <- function(dat, apply_pos_opt_on_neg_x) {
 }
 
 EXP <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -623,7 +623,7 @@ EXP <- function(dat) {
 }
 
 SIN <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -643,7 +643,7 @@ SIN <- function(dat) {
 }
 
 COS <- function(dat) {
-  X <- dat$X
+  X <- as.matrix(dat$X)
   head_in <- dat$head
   dimen_in <- dat$dimen
   p <- ncol(X)
@@ -662,45 +662,50 @@ COS <- function(dat) {
   return(data_out)
 }
 
-uniary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
-  # Uniary operations
-  data_abs <- ABS(data)
-  data_sqrt <- SQRT(data, apply_pos_opt_on_neg_x)
-  data_inv <- INV(data)
-  data_sqre <- SQRE(data)
-  data_log <- LOG(data, apply_pos_opt_on_neg_x)
-  data_exp <- EXP(data)
+unary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
+  p <- ncol(as.matrix(data$X))
+  if (p < 1) {
+    stop("X has zero column. Need at least 1 column to perform unary operations!")
+  } else {
+    # unary operations
+    data_abs <- ABS(data)
+    data_sqrt <- SQRT(data, apply_pos_opt_on_neg_x)
+    data_inv <- INV(data)
+    data_sqre <- SQRE(data)
+    data_log <- LOG(data, apply_pos_opt_on_neg_x)
+    data_exp <- EXP(data)
 
-  if(sin_cos == TRUE){
-    data_sin <- SIN(data)
-    data_cos <- COS(data)
+    if(sin_cos == TRUE){
+      data_sin <- SIN(data)
+      data_cos <- COS(data)
 
-    # Combine datasets
-    X <- cbind(data$X, data_sqrt$X, data_sqre$X,
-               data_log$X, data_exp$X, data_sin$X,
-               data_cos$X, data_inv$X, data_abs$X)
-    head <- c(data$head, data_sqrt$head, data_sqre$head,
-              data_log$head, data_exp$head, data_sin$head,
-              data_cos$head, data_inv$head, data_abs$head)
-    dimen <- c(data$dimen, data_sqrt$dimen, data_sqre$dimen,
-               data_log$dimen, data_exp$dimen, data_sin$dimen,
-               data_cos$dimen, data_inv$dimen, data_abs$dimen)
-  } else{
-    # Combine datasets
-    X <- cbind(data$X, data_abs$X, data_sqrt$X,
-               data_inv$X, data_sqre$X, data_log$X,
-               data_exp$X)
-    head <- c(data$head, data_abs$head, data_sqrt$head,
-              data_inv$head, data_sqre$head, data_log$head,
-              data_exp$head)
-    dimen <- c(data$dimen, data_abs$dimen, data_sqrt$dimen,
-               data_inv$dimen, data_sqre$dimen, data_log$dimen,
-               data_exp$dimen)
+      # Combine datasets
+      X <- cbind(data$X, data_sqrt$X, data_sqre$X,
+                 data_log$X, data_exp$X, data_sin$X,
+                 data_cos$X, data_inv$X, data_abs$X)
+      head <- c(data$head, data_sqrt$head, data_sqre$head,
+                data_log$head, data_exp$head, data_sin$head,
+                data_cos$head, data_inv$head, data_abs$head)
+      dimen <- c(data$dimen, data_sqrt$dimen, data_sqre$dimen,
+                 data_log$dimen, data_exp$dimen, data_sin$dimen,
+                 data_cos$dimen, data_inv$dimen, data_abs$dimen)
+    } else{
+      # Combine datasets
+      X <- cbind(data$X, data_abs$X, data_sqrt$X,
+                 data_inv$X, data_sqre$X, data_log$X,
+                 data_exp$X)
+      head <- c(data$head, data_abs$head, data_sqrt$head,
+                data_inv$head, data_sqre$head, data_log$head,
+                data_exp$head)
+      dimen <- c(data$dimen, data_abs$dimen, data_sqrt$dimen,
+                 data_inv$dimen, data_sqre$dimen, data_log$dimen,
+                 data_exp$dimen)
+    }
+
+    Phi <- list(X = X, head = unname(head), dimen = dimen)
+
+    # Remove redundant descriptors
+    Phi <- dataprocessing(Phi)
+    return(Phi)
   }
-
-  Phi <- list(X = X, head = unname(head), dimen = dimen)
-
-  # Remove redundant descriptors
-  Phi <- dataprocessing(Phi)
-  return(Phi)
 }

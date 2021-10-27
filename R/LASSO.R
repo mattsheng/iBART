@@ -32,7 +32,7 @@ LASSO <- function(X, y, head, dimen, train_idx = NULL) {
   if (length(pos_idx) == 0) {
     stop("LASSO did not select any variable, trying another seed...")
   } else {
-    X_selected <- X[, pos_idx]
+    X_selected <- as.matrix(X[, pos_idx])
     head_selected <- head[pos_idx]
     if (is.null(dimen)) {
       dimen_selected <- NULL

@@ -32,7 +32,7 @@ BART_iter <- function(X, y, head, dimen,
     X_train_scale <- as.data.frame(X_train)
   }
 
-  if(is.null(seed)){
+  if (is.null(seed)) {
     bart_machine <- bartMachine(X_train_scale, y_train,
                                 num_trees = num_trees,
                                 num_burn_in = num_burn_in,
@@ -61,10 +61,10 @@ BART_iter <- function(X, y, head, dimen,
 
   # Check if BART selected any variable
   if (is.null(X_selected) && length(pos_idx) == 0) {
-    stop("BART did not select any variable, trying another seed...")
+    stop("BART did not select any variable, please try another seed...")
   } else {
     if (!is.null(X_selected)) {
-      X_selected <- cbind(X_selected, X[, pos_idx])
+      X_selected <- cbind(X_selected, as.matrix(X[, pos_idx]))
       head_selected <- c(head_selected, head[pos_idx])
       if (is.null(dimen)) {
         dimen_selected <- NULL
@@ -75,17 +75,15 @@ BART_iter <- function(X, y, head, dimen,
       # Remove duplicated data
       temp <- round(X_selected, digits = 6)
       dup_index <- duplicated(temp, MARGIN = 2)
-      if (any(dup_index == TRUE)) {
-        X_selected <- X_selected[, !dup_index]
-        head_selected <- head_selected[!dup_index]
-        if (is.null(dimen)) {
-          dimen_selected <- NULL
-        } else {
-          dimen_selected <- dimen_selected[!dup_index]
-        }
+      X_selected <- X_selected[, !dup_index]
+      head_selected <- head_selected[!dup_index]
+      if (is.null(dimen)) {
+        dimen_selected <- NULL
+      } else {
+        dimen_selected <- dimen_selected[!dup_index]
       }
     } else {
-      X_selected <- X[, pos_idx]
+      X_selected <- as.matrix(X[, pos_idx])
       head_selected <- head[pos_idx]
       if (is.null(dimen)) {
         dimen_selected <- NULL

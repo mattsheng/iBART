@@ -1,8 +1,6 @@
-uniaryOperation <- function(BART_output, sin_cos, apply_pos_opt_on_neg_x) {
-  # Uniary operations
-  data <- BART_output
-  names(data) <- c("X", "head", "dimen")
-  Uni_opt <- uniary(BART_output, sin_cos, apply_pos_opt_on_neg_x)
+unaryOperation <- function(BART_output, sin_cos, apply_pos_opt_on_neg_x) {
+  # Unary operations
+  Uni_opt <- unary(BART_output, sin_cos, apply_pos_opt_on_neg_x)
   colnames(Uni_opt$X) <- Uni_opt$head
 
   # Attach input data

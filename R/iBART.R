@@ -13,7 +13,7 @@
 #' @param num_iterations_after_burn_in BART parameter: number of MCMC samples to draw from the posterior distribution of \eqn{hat{f}(x)}. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_iterations_after_burn_in = 5000}.
 #' @param num_reps_for_avg BART parameter: number of replicates to over over to for the BART model's variable inclusion proportions. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_reps_for_avg = 10}.
 #' @param num_permute_samples BART parameter: number of permutations of the response to be made to generate the “null” permutation distribution. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_permute_samples = 50}.
-#' @param opt If \code{opt = 1}, uniary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.
+#' @param opt If \code{opt = 1}, unary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.
 #' @param sin_cos Logical flag for using \eqn{sin(\pi*x)} and \eqn{cos(\pi*x)} to generate descriptors. This is useful if you think there is periodic relationship between predictors and response. Default is \code{sin_cos = FALSE}.
 #' @param apply_pos_opt_on_neg_x Logical flag for applying non-negative-valued operators, such as \eqn{\sqrt x} and \eqn{log(x)}, when some values of \eqn{x} is negative. If \code{apply_pos_opt_on_neg_x == TRUE}, apply absolute value operator first then non-negative-valued operator, i.e. generate \eqn{\sqrt |x|} and \eqn{log(|x|)} instead. Default is \code{apply_pos_opt_on_neg_x = TRUE}.
 #' @param iter Number of iterations. Default is \code{iter = 3}.
@@ -37,11 +37,12 @@
 #' \item{LS_in_sample_RMSE}{In sample RMSE of the least square estimators on the iBART selected descriptors.}
 #' \item{LS_out_sample_RMSE}{Out of sample RMSE of the least square estimators on the iBART selected descriptors if \code{out_sample == TRUE}.}
 #' \item{Lzero_model}{The \eqn{l_0}-penalized regression model fitted on the iBART selected descriptors for \eqn{1 \le k \le K}.}
-#' \item{Lzero_names}{The best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
+#' \item{Lzero_names}{The name of the best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 #' \item{Lzero_in_sample_RMSE}{In sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 #' \item{Lzero_out_sample_RMSE}{Out of sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K} if \code{out_sample == TRUE}.}
 #' \item{Lzero_aic_model}{The best \eqn{l_0}-penalized regression model selected by AIC.}
 #' \item{Lzero_aic_names}{The best \eqn{k}D descriptors where \eqn{1 \le k \le K} is chosen via AIC.}
+#' \item{runtime}{Runtime in second.}
 #'
 #' @author
 #' Shengbin Ye and Meng Li
@@ -100,8 +101,8 @@ iBART <- function(X = NULL, y = NULL,
                   writeLog = FALSE,
                   count = NULL,
                   seed = NULL) {
-  start_time <- Sys.time()
 
+  #### Check inputs ####
   if ((is.null(X)) || is.null(y)){
     stop("You need to give iBART a training set by specifying X and y \n")
   }
@@ -193,7 +194,7 @@ iBART <- function(X = NULL, y = NULL,
     set.seed(seed)
   }
 
-  ### Generating training set
+  #### Generating training set ####
   if (out_sample == TRUE) {
     n <- nrow(X)
     train_idx <- sample(1:n, floor(train_ratio * n))
@@ -209,23 +210,27 @@ iBART <- function(X = NULL, y = NULL,
   cor_mat[is.na(cor_mat)] <- 0
   zero_idx <- which(cor_mat == 0)
   if (length(zero_idx) > 0){
-    X <- X[, -zero_idx]
+    X <- as.matrix(X[, -zero_idx])
     head <- head[-zero_idx]
     if (!is.null(dimen)) {
       dimen <- dimen[-zero_idx]
     }
   }
+  # Save original training data
+  X_org <- as.data.frame(X)
 
   # Capture size of iBART generated space and selected space
   iBART_gen_size <- rep(0, iter + 1)
   iBART_sel_size <- rep(0, iter + 1)
-
   iBART_gen_size[1] <- ncol(X)
-  ### iBART for iter
+
+  #### iBART descriptor generation and selection ####
+  start_time <- Sys.time()
   cat("Start iBART descriptor generation and selection... \n")
   for (i in 1:iter) {
     cat(paste("Iteration", i, "\n", sep = " "))
     cat("iBART descriptor selection... \n")
+
     ### BART variable selection
     if (i == 1) {
       BART_selection <- BART_iter(X = X, y = y,
@@ -263,20 +268,20 @@ iBART <- function(X = NULL, y = NULL,
     ### Feature engineering via operations
     if (opt == 1){
       if ((i %% 2) == 1) {
-        cat("Constructing descriptors using uniary operators... \n")
-        Operator_output <- uniaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
+        cat("Constructing descriptors using unary operators... \n")
+        Operator_output <- unaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
       } else {
         cat("Constructing descriptors using binary operators... \n")
         Operator_output <- binaryOperation(BART_selection, sin_cos)
       }
     } else if (opt == 2){
-      # binary first then uniary
+      # binary first then unary
       if ((i %% 2) == 1) {
         cat("Constructing descriptors using binary operators... \n")
         Operator_output <- binaryOperation(BART_selection, sin_cos)
       } else {
-        cat("Constructing descriptors using uniary operators... \n")
-        Operator_output <- uniaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
+        cat("Constructing descriptors using unary operators... \n")
+        Operator_output <- unaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
       }
     }
 
@@ -292,7 +297,7 @@ iBART <- function(X = NULL, y = NULL,
     iBART_gen_size[i + 1] <- ncol(X)
   }
 
-  ### LASSO variable selection
+  #### LASSO variable selection ####
   cat("BART iteration done! \n")
   cat("LASSO descriptor selection... \n")
   LASSO_selection <- LASSO(X = X, y = y,
@@ -300,7 +305,7 @@ iBART <- function(X = NULL, y = NULL,
                            dimen = dimen,
                            train_idx = train_idx)
 
-  ### Attach output
+  #### Attach output ####
   X_selected <- as.matrix(LASSO_selection$X_selected)
   head_selected <- LASSO_selection$head_selected
   dimen_selected <- LASSO_selection$dimen_selected
@@ -309,7 +314,7 @@ iBART <- function(X = NULL, y = NULL,
 
   iBART_sel_size[iter + 1] <- ncol(X_selected)
 
-  ### Calculate Least Squares RMSEs
+  #### Fit Least Sqaures using LASSO selected descriptors ####
   if (is.null(train_idx)) {
     X_train <- X_selected
     y_train <- y
@@ -325,6 +330,17 @@ iBART <- function(X = NULL, y = NULL,
     y_test <- y[-train_idx]
   }
 
+  if (standardize == TRUE) {
+    train_col_mean <- colMeans(X_train)
+    train_col_sd <- apply(X_train, 2, sd, na.rm = TRUE)
+    X_train <- scale(X_train)
+    if (out_sample == TRUE){
+      for (p in 1:ncol(X_test)) {
+        X_test[, p] <- (X_test[, p] - train_col_mean[p]) / train_col_sd[p]
+      }
+    }
+  }
+
   LS <- lm(y_train ~ ., data = as.data.frame(cbind(y_train, X_train)))
   coef <- as.vector(LS$coefficients)
   coef[is.na(coef)] <- 0
@@ -336,33 +352,32 @@ iBART <- function(X = NULL, y = NULL,
     LS_out_sample_RMSE <- sqrt(mean((yhat_test - y_test)^2))
   }
 
+  #### L-zero regression ####
   if (Lzero == TRUE){
-    #### L-zero regression
     cat("L-zero regression... \n")
     p <- ncol(X_train)
-    best_model <- list()
-    best_names <- list()
-    rmse_k_model_in <- rep(0, min(p, K))
-    rmse_k_model_out <- rep(0, min(p, K))
+    Lzero_models <- Lzero_names <- list()
+    rmse_k_model_in <- rmse_k_model_out <- rep(NA, K)
     if (AIC == TRUE) aic <- c()
     for (k in 1:min(p, K)) {
       k_model <- k_var_model(X_train, y_train, X_test, y_test, k, parallel = FALSE)
       rmse_k_model_out[k] <- k_model$rmse_out
       rmse_k_model_in[k] <- k_model$rmse_in
-      best_model[[k]] <- k_model$model
-      best_names[[k]] <- k_model$names
+      Lzero_models[[k]] <- k_model$model
+      Lzero_names[[k]] <- k_model$names
       if (AIC == TRUE) aic[k] <- AIC(k_model$model)
     }
     if (AIC == TRUE) {
       lowest_aic_idx <- which.min(aic)
-      aic_model <- best_model[[lowest_aic_idx]]
-      aic_names <- best_names[[lowest_aic_idx]]
+      aic_model <- Lzero_models[[lowest_aic_idx]]
+      aic_names <- Lzero_names[[lowest_aic_idx]]
     }
   }
 
   end_time <- Sys.time()
   cat(paste("Total time:", difftime(end_time, start_time, units = "secs"), "secs \n", sep = " "))
 
+  #### Generate output log to txt file ####
   if (writeLog == TRUE) {
     if (is.null(count)) {
       filename <- paste("output.txt", sep = "")
@@ -397,13 +412,14 @@ iBART <- function(X = NULL, y = NULL,
         }
         writeLines(c(paste("RMSE in-sample:",  rmse_k_model_in[k]), "\n"), data_log)
         writeLines("Descriptors:", data_log)
-        writeLines(c(best_names[[k]], "\n"), data_log)
+        writeLines(c(Lzero_names[[k]], "\n"), data_log)
       }
     }
     writeLines(paste("Time:", end_time - start_time), data_log)
     close(data_log)
   }
 
+  #### Save ouputs ####
   iBART_output <- list(X_selected = X_selected,
                        descriptor_names = head_selected,
                        iBART_gen_size = iBART_gen_size,
@@ -414,8 +430,8 @@ iBART <- function(X = NULL, y = NULL,
                        LS_model = LS,
                        LS_in_sample_RMSE = LS_in_sample_RMSE,
                        LS_out_sample_RMSE = if (out_sample) LS_out_sample_RMSE else NA,
-                       Lzero_model = if (Lzero) best_model else NULL,
-                       Lzero_names = if (Lzero) best_names else NULL,
+                       Lzero_model = if (Lzero) Lzero_models else NULL,
+                       Lzero_names = if (Lzero) Lzero_names else NULL,
                        Lzero_in_sample_RMSE = if (Lzero) rmse_k_model_in else NA,
                        Lzero_out_sample_RMSE = if (out_sample && Lzero) rmse_k_model_out else NA,
                        Lzero_aic_model = if (Lzero && AIC) aic_model else NULL,
