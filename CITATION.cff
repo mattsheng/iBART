@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Ye"
+  given-names: "Shengbin"
+  orcid: "https://orcid.org/0000-0001-8767-2595"
+- family-names: "Li"
+  given-names: "Meng"
+  orcid: "https://orcid.org/0000-0003-2123-2444"
+title: "iBART"
+version: 0.0.2.0
+doi: https://arxiv.org/abs/2110.10195
+date-released: 2021-10-26
+url: "https://github.com/mattsheng/iBART"
