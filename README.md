@@ -40,9 +40,17 @@ locale:
 attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
+other attached packages:
+ [1] iBART_0.0.2.0       glmnet_4.1-2        Matrix_1.3-4       
+ [4] bartMachine_1.2.6   missForest_1.4      itertools_0.1-3    
+ [7] iterators_1.0.13    foreach_1.5.1       randomForest_4.6-14
+[10] bartMachineJARs_1.1 rJava_1.0-5        
+
 loaded via a namespace (and not attached):
- [1] compiler_4.1.1  magrittr_2.0.1  plyr_1.8.6      fastmap_1.1.0   htmltools_0.5.2
- [6] tools_4.1.1     reshape2_1.4.4  yaml_2.2.1      Rcpp_1.0.7      stringi_1.7.5  
-[11] rmarkdown_2.11  knitr_1.36      stringr_1.4.0   xfun_0.27       digest_0.6.28  
-[16] rlang_0.4.12    evaluate_0.14
+ [1] Rcpp_1.0.7       knitr_1.36       magrittr_2.0.1   splines_4.1.1   
+ [5] lattice_0.20-45  rlang_0.4.12     fastmap_1.1.0    stringr_1.4.0   
+ [9] plyr_1.8.6       tools_4.1.1      parallel_4.1.1   grid_4.1.1      
+[13] xfun_0.27        htmltools_0.5.2  survival_3.2-13  yaml_2.2.1      
+[17] digest_0.6.28    reshape2_1.4.4   codetools_0.2-18 shape_1.4.6     
+[21] evaluate_0.14    rmarkdown_2.11   stringi_1.7.5    compiler_4.1.1
 ```
