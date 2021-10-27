@@ -27,33 +27,22 @@ install_github("mattsheng/iBART", ref = "master")
 
 # R Session Info
 ```
-R version 4.0.5 (2021-03-31)
-Platform: x86_64-w64-mingw32/x64 (64-bit)
-Running under: Windows 10 x64 (build 19043)
+R version 4.1.1 (2021-08-10)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
 
 Matrix products: default
+LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
 
 locale:
-[1] LC_COLLATE=English_United States.1252 
-[2] LC_CTYPE=English_United States.1252   
-[3] LC_MONETARY=English_United States.1252
-[4] LC_NUMERIC=C                          
-[5] LC_TIME=English_United States.1252    
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 attached base packages:
-[1] stats     graphics  grDevices utils     datasets 
-[6] methods   base     
-
-other attached packages:
- [1] iBART_0.0.1.5       glmnet_4.1-1       
- [3] Matrix_1.3-4        bartMachine_1.2.6  
- [5] missForest_1.4      itertools_0.1-3    
- [7] iterators_1.0.13    foreach_1.5.1      
- [9] randomForest_4.6-14 bartMachineJARs_1.1
-[11] rJava_1.0-4        
+[1] stats     graphics  grDevices utils     datasets  methods   base     
 
 loaded via a namespace (and not attached):
-[1] lattice_0.20-44  codetools_0.2-18 grid_4.0.5      
-[4] splines_4.0.5    tools_4.0.5      survival_3.2-11 
-[7] parallel_4.0.5   compiler_4.0.5   shape_1.4.6 
+ [1] compiler_4.1.1  magrittr_2.0.1  plyr_1.8.6      fastmap_1.1.0   htmltools_0.5.2
+ [6] tools_4.1.1     reshape2_1.4.4  yaml_2.2.1      Rcpp_1.0.7      stringi_1.7.5  
+[11] rmarkdown_2.11  knitr_1.36      stringr_1.4.0   xfun_0.27       digest_0.6.28  
+[16] rlang_0.4.12    evaluate_0.14
 ```
