@@ -57,6 +57,7 @@ loaded via a namespace (and not attached):
 
 # Citation
 If you use the iBART R package, please cite the following:
+```
 @misc{ye2021operatorinduced,
       title={Operator-induced structural variable selection with applications to materials genomes}, 
       author={Shengbin Ye and Thomas P. Senftle and Meng Li},
@@ -65,3 +66,4 @@ If you use the iBART R package, please cite the following:
       archivePrefix={arXiv},
       primaryClass={stat.ME}
 }
+```
