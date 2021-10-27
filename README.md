@@ -54,3 +54,14 @@ loaded via a namespace (and not attached):
 [17] digest_0.6.28    reshape2_1.4.4   codetools_0.2-18 shape_1.4.6     
 [21] evaluate_0.14    rmarkdown_2.11   stringi_1.7.5    compiler_4.1.1
 ```
+
+# Citation
+If you use the iBART R package, please cite the following:
+@misc{ye2021operatorinduced,
+      title={Operator-induced structural variable selection with applications to materials genomes}, 
+      author={Shengbin Ye and Thomas P. Senftle and Meng Li},
+      year={2021},
+      eprint={2110.10195},
+      archivePrefix={arXiv},
+      primaryClass={stat.ME}
+}
