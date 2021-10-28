@@ -8,6 +8,7 @@
 #' @param y Response variable \eqn{y}.
 #' @param head Optional: name of primary features.
 #' @param dimen Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_dimension()} for details.
+#' @param BART_var_sel_method Variable selection criterion used in BART. Three options are available: (1) "global_se", (2) "global_max", (3) "local". The default is "global_se". See \code{var_selection_by_permute} in \code{R} package \code{bartMachine} for more detail.
 #' @param num_trees BART parameter: number of trees to be grown in the sum-of-trees model. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_trees = 20}.
 #' @param num_burn_in BART parameter: number of MCMC samples to be discarded as ``burn-in". If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_burn_in = 10000}.
 #' @param num_iterations_after_burn_in BART parameter: number of MCMC samples to draw from the posterior distribution of \eqn{hat{f}(x)}. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_iterations_after_burn_in = 5000}.
@@ -83,6 +84,7 @@
 iBART <- function(X = NULL, y = NULL,
                   head = NULL,
                   dimen = NULL,
+                  BART_var_sel_method = "global_se",
                   num_trees = 20,
                   num_burn_in = 10000,
                   num_iterations_after_burn_in = 5000,
@@ -121,6 +123,10 @@ iBART <- function(X = NULL, y = NULL,
 
   if (length(y) != nrow(X)){
     stop("The number of responses must be equal to the number of observations in the training data X.")
+  }
+
+  if (!(BART_var_sel_method %in% c("global_se", "global_max", "local"))) {
+    stop("BART_var_sel_method must be \"global_se\", \"global_max\", or \"local\"!!")
   }
 
   if (length(num_trees) == 1) {
@@ -236,6 +242,7 @@ iBART <- function(X = NULL, y = NULL,
       BART_selection <- BART_iter(X = X, y = y,
                                   head = head,
                                   dimen = dimen,
+                                  BART_var_sel_method = BART_var_sel_method,
                                   X_selected = NULL,
                                   head_selected = NULL,
                                   dimen_selected = NULL,
@@ -251,6 +258,7 @@ iBART <- function(X = NULL, y = NULL,
       BART_selection <- BART_iter(X = X, y = y,
                                   head = head,
                                   dimen = dimen,
+                                  BART_var_sel_method = BART_var_sel_method,
                                   X_selected = X_selected,
                                   head_selected = head_selected,
                                   dimen_selected = dimen_selected,

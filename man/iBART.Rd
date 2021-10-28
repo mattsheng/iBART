@@ -9,6 +9,7 @@ iBART(
   y = NULL,
   head = NULL,
   dimen = NULL,
+  BART_var_sel_method = "global_se",
   num_trees = 20,
   num_burn_in = 10000,
   num_iterations_after_burn_in = 5000,
@@ -37,6 +38,8 @@ iBART(
 \item{head}{Optional: name of primary features.}
 
 \item{dimen}{Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_dimension()} for details.}
+
+\item{BART_var_sel_method}{Variable selection criterion used in BART. Three options are available: (1) "global_se", (2) "global_max", (3) "local". The default is "global_se". See \code{var_selection_by_permute} in \code{R} package \code{bartMachine} for more detail.}
 
 \item{num_trees}{BART parameter: number of trees to be grown in the sum-of-trees model. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_trees = 20}.}
 

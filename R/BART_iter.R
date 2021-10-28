@@ -1,4 +1,5 @@
 BART_iter <- function(X, y, head, dimen,
+                      BART_var_sel_method = "global_se",
                       X_selected = NULL,
                       head_selected = NULL,
                       dimen_selected = NULL,
@@ -57,7 +58,14 @@ BART_iter <- function(X, y, head, dimen,
                                       num_trees_for_permute = 20,
                                       plot = FALSE)
 
-  pos_idx <- sort(var_sel$important_vars_global_se_col_nums)
+  # Store selected index
+  if (BART_var_sel_method == "global_max") {
+    pos_idx <- sort(var_sel$important_vars_global_max_col_nums)
+  } else if (BART_var_sel_method == "local") {
+    pos_idx <- sort(var_sel$important_vars_local_col_nums)
+  } else {
+    pos_idx <- sort(var_sel$important_vars_global_se_col_nums)
+  }
 
   # Check if BART selected any variable
   if (is.null(X_selected) && length(pos_idx) == 0) {

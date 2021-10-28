@@ -1,3 +1,12 @@
+iBART v0.0.2.1 (Release date: 2021-10-28)
+==============
+
+Changes:
+
+* Remove changes from iBART v0.0.2.0
+* Add options to select variable selection criterion used by bartMachine. Three options are available: "global_se", "global_max", and "local". The default criterion is "global_se". See var_selection_by_permute in R package bartMachine for more detail.
+
+
 iBART v0.0.2.0 (Release date: 2021-08-31)
 ==============
 
