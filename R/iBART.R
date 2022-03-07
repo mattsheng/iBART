@@ -254,6 +254,7 @@ iBART <- function(X = NULL, y = NULL,
                                   standardize = standardize,
                                   train_idx = train_idx,
                                   seed = seed)
+      pos_idx_new <- BART_selection$pos_idx
     } else {
       BART_selection <- BART_iter(X = X, y = y,
                                   head = head,
@@ -270,11 +271,21 @@ iBART <- function(X = NULL, y = NULL,
                                   standardize = standardize,
                                   train_idx = train_idx,
                                   seed = seed)
+      pos_idx_old <- pos_idx_new
+      pos_idx_new <- BART_selection$pos_idx
+      if ((length(pos_idx_old) == 0) & (length(pos_idx_new) == 0)) {
+        message("iBART didn't select anything in 2 consecutive iterations.")
+        message("Results from the last good iteration are reported.")
+        X <- as.matrix(BART_selection$X_selected)
+        head <- BART_selection$head_selected
+        dimen <- BART_selection$dimen_selected
+        break
+      }
     }
     iBART_sel_size[i] = ncol(BART_selection$X_selected)
 
     ### Feature engineering via operations
-    if (opt == 1){
+    if (opt == 1) {
       if ((i %% 2) == 1) {
         cat("Constructing descriptors using unary operators... \n")
         Operator_output <- unaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
@@ -282,7 +293,7 @@ iBART <- function(X = NULL, y = NULL,
         cat("Constructing descriptors using binary operators... \n")
         Operator_output <- binaryOperation(BART_selection, sin_cos)
       }
-    } else if (opt == 2){
+    } else {
       # binary first then unary
       if ((i %% 2) == 1) {
         cat("Constructing descriptors using binary operators... \n")
@@ -322,7 +333,7 @@ iBART <- function(X = NULL, y = NULL,
 
   iBART_sel_size[iter + 1] <- ncol(X_selected)
 
-  #### Fit Least Sqaures using LASSO selected descriptors ####
+  #### Fit Least Squares using LASSO selected descriptors ####
   if (is.null(train_idx)) {
     X_train <- X_selected
     y_train <- y
@@ -339,7 +350,7 @@ iBART <- function(X = NULL, y = NULL,
   }
 
   if (standardize == TRUE) {
-    train_col_mean <- colMeans(X_train)
+    train_col_mean <- colMeans(X_train, na.rm = TRUE)
     train_col_sd <- apply(X_train, 2, sd, na.rm = TRUE)
     X_train <- scale(X_train)
     if (out_sample == TRUE){

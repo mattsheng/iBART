@@ -27,7 +27,7 @@ BART_iter <- function(X, y, head, dimen,
   }
 
   # bartMachine only takes dataframe
-  if (standardize == TRUE){
+  if (standardize) {
     X_train_scale <- as.data.frame(scale(X_train))
   } else {
     X_train_scale <- as.data.frame(X_train)
@@ -68,8 +68,8 @@ BART_iter <- function(X, y, head, dimen,
   }
 
   # Check if BART selected any variable
-  if (is.null(X_selected) && length(pos_idx) == 0) {
-    stop("BART did not select any variable, please try another seed...")
+  if ((is.null(X_selected)) & (length(pos_idx) == 0)) {
+    stop("iBART didn't select any features in the 1st iteration. Please consider increasing num_trees.")
   } else {
     if (!is.null(X_selected)) {
       X_selected <- cbind(X_selected, as.matrix(X[, pos_idx]))
@@ -101,7 +101,8 @@ BART_iter <- function(X, y, head, dimen,
     }
     BART_output <- list(X_selected = X_selected,
                         head_selected = head_selected,
-                        dimen_selected = dimen_selected)
+                        dimen_selected = dimen_selected,
+                        pos_idx = pos_idx)
     return(BART_output)
   }
 }
