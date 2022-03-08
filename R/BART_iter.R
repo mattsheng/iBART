@@ -67,6 +67,9 @@ BART_iter <- function(X, y, head, dimen,
     pos_idx <- sort(var_sel$important_vars_global_se_col_nums)
   }
 
+  # NA in pos_idx means no feature is selected
+  if (anyNA(pos_idx)) pos_idx <- NULL
+
   # Check if BART selected any variable
   if ((is.null(X_selected)) & (length(pos_idx) == 0)) {
     stop("iBART didn't select any features in the 1st iteration. Please consider increasing num_trees.")
