@@ -1,3 +1,21 @@
+iBART v0.0.2.4 (Release date: 2022-04-04)
+==============
+
+Changes:
+
+* Added an option to hold BART variable selection in each iBART iteration.
+
+
+iBART v0.0.2.3 (Release date: 2022-03-30)
+==============
+
+Changes:
+
+* Fixed a bug to skip Lzero if iBART only selected 1 descriptor.
+* Removed least-squares model.
+* Added in sample and out of sample RMSE outputs of iBART+l0 AIC.
+
+
 iBART v0.0.2.2 (Release date: 2022-03-07)
 ==============
 

@@ -44,7 +44,7 @@ LASSO <- function(X, y, head, dimen, train_idx = NULL) {
                          head_selected = head_selected,
                          dimen_selected = dimen_selected,
                          In_sample_RMSE = RMSE_LASSO_in_sample,
-                         Out_sample_RMSE = ifelse(!is.null(train_idx), RMSE_LASSO_out_sample, NA),
+                         Out_sample_RMSE = if (is.null(train_idx)) NA else RMSE_LASSO_out_sample,
                          LASSO_model = cvfit)
     return(LASSO_output)
   }
