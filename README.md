@@ -9,9 +9,9 @@ Department of Statistics, Rice Univerisity.
 ## Install Dependencies
 - R packages `bartMachine >= v1.2.6` and `glmnet >= v4.1-1` are required for installing the `iBART` package in R.
 - `bartMachine` requires `Java JDK` to be installed on your computer. Visit https://www.oracle.com/java/technologies/javase/jdk13-archive-downloads.html to download `Java JDK v13.0.2`.
-- Install rJava using `install.packages("rJava")` within `R` after installing `Java JDK v13.0.2`.
-- Install bartMachine using `install.packages("bartMachine", INSTALL_opts = "--no-multiarch").
-- Install devtools using `install.packages("devtools")`. The `R` package devtools is required to install R packages from GitHub. 
+- Install `rJava` using `install.packages("rJava")` within `R` after installing `Java JDK v13.0.2`.
+- Install `bartMachine` using `install.packages("bartMachine", INSTALL_opts = "--no-multiarch")`. `bartMachine` is built for x64 only but `R` will try to install both x86 and x64 versions.
+- Install `devtools` using `install.packages("devtools")`. The `R` package devtools is required to install R packages from GitHub. 
 
 ## Install iBART via GitHub 
 Use the following code to install `iBART` from GitHub:
