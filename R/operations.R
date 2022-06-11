@@ -2,43 +2,37 @@ dataprocessing <- function(dat) {
   X <- as.matrix(dat$X)
   head <- dat$head
   dimen <- dat$dimen
-  p <- ncol(X)
 
   # Remove X cols with duplicated data
   temp <- round(X, digits = 6)
-  dup_index <- duplicated(temp, MARGIN = 2)
-  X <- as.matrix(X[, !dup_index])
-  head <- head[!dup_index]
+  dup_idx <- duplicated(temp, MARGIN = 2)
+  X <- as.matrix(X[, !dup_idx])
+  head <- head[!dup_idx]
   if (is.null(dimen)) {
     dimen <- NULL
   } else {
-    dimen <- dimen[!dup_index]
+    dimen <- dimen[!dup_idx]
+  }
+
+  # Remove columns with -Inf, Inf
+  inf_idx <- apply(X, 2, function(x) any(abs(x) == Inf))
+  X <- as.matrix(X[, !inf_idx])
+  head <- head[!inf_idx]
+  if (is.null(dimen)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!inf_idx]
   }
 
   # Remove columns without variability
   s <- apply(X, 2, function(x) sd(x))
-  no_var_index <- which(s == 0)
-  if (length(no_var_index) > 0) {
-    X <- as.matrix(X[, -no_var_index])
-    head <- head[-no_var_index]
-    if (is.null(dimen)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[-no_var_index]
-    }
-  }
-
-  # Remove columns with -Inf, Inf
-  ind_inf <- apply(X, 2, function(x) any(abs(x) == Inf))
-  rm_ind <- which(ind_inf == TRUE)
-  if (length(rm_ind) > 0) {
-    X <- as.matrix(X[, -rm_ind])
-    head <- head[-rm_ind]
-    if (is.null(dimen)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[-rm_ind]
-    }
+  no_var_idx <- (s == 0)
+  X <- as.matrix(X[, !no_var_idx])
+  head <- head[!no_var_idx]
+  if (is.null(dimen)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!no_var_idx]
   }
 
   results <- list(X = X,
@@ -65,7 +59,7 @@ ADD <- function(dat) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] + X[, j]
-        head[count] <- paste("(", head_in[i], "+", head_in[j], ")", sep = "")
+        head[count] <- paste0("(", head_in[i], "+", head_in[j], ")")
         count <- count + 1
       }
     }
@@ -79,7 +73,7 @@ ADD <- function(dat) {
         dimen_j <- dimen_j[order(names(dimen_j))]
         if (setequal(names(dimen_i), names(dimen_j)) && isTRUE(dimen_i == dimen_j)) {
           X_tmp[, count] <- X[, i] + X[, j]
-          head[count] <- paste("(", head_in[i], "+", head_in[j], ")", sep = "")
+          head[count] <- paste0("(", head_in[i], "+", head_in[j], ")")
           dimen[[count]] <- dimen_i
         } else {
           head[count] <- "empty"
@@ -89,12 +83,11 @@ ADD <- function(dat) {
       }
     }
 
-    idx_empty <- which(head == "empty")
-    if (length(idx_empty) > 0) {
-      X_tmp <- as.matrix(X_tmp[, -idx_empty])
-      head <- head[-idx_empty]
-      dimen <- dimen[-idx_empty]
-    }
+    # Remove non-physical descriptors
+    idx_empty <- (head == "empty")
+    X_tmp <- as.matrix(X_tmp[, !idx_empty])
+    head <- head[!idx_empty]
+    dimen <- dimen[!idx_empty]
   }
 
   data_out <- list(X = X_tmp,
@@ -119,7 +112,7 @@ MINUS <- function(dat) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] - X[, j]
-        head[count] <- paste("(", head_in[i], "-", head_in[j], ")", sep = "")
+        head[count] <- paste0("(", head_in[i], "-", head_in[j], ")")
         count <- count + 1
       }
     }
@@ -133,7 +126,7 @@ MINUS <- function(dat) {
         dimen_j <- dimen_j[order(names(dimen_j))]
         if (setequal(names(dimen_i), names(dimen_j)) && isTRUE(dimen_i == dimen_j)) {
           X_tmp[, count] <- X[, i] - X[, j]
-          head[count] <- paste("(", head_in[i], "-", head_in[j], ")", sep = "")
+          head[count] <- paste0("(", head_in[i], "-", head_in[j], ")")
           dimen[[count]] <- dimen_i
         } else {
           head[count] <- "empty"
@@ -143,12 +136,11 @@ MINUS <- function(dat) {
       }
     }
 
-    idx_empty <- which(head == "empty")
-    if (length(idx_empty) > 0) {
-      X_tmp <- as.matrix(X_tmp[, -idx_empty])
-      head <- head[-idx_empty]
-      dimen <- dimen[-idx_empty]
-    }
+    # Remove non-physical descriptors
+    idx_empty <- (head == "empty")
+    X_tmp <- as.matrix(X_tmp[, !idx_empty])
+    head <- head[!idx_empty]
+    dimen <- dimen[!idx_empty]
   }
 
   data_out <- list(X = X_tmp,
@@ -173,7 +165,7 @@ MULTI <- function(dat) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] * X[, j]
-        head[count] <- paste("(", head_in[i], "*", head_in[j], ")", sep = "")
+        head[count] <- paste0("(", head_in[i], "*", head_in[j], ")")
         count <- count + 1
       }
     }
@@ -182,7 +174,7 @@ MULTI <- function(dat) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] * X[, j]
-        head[count] <- paste("(", head_in[i], "*", head_in[j], ")", sep = "")
+        head[count] <- paste0("(", head_in[i], "*", head_in[j], ")")
 
         dimen_i <- dimen_in[[i]]
         dimen_j <- dimen_in[[j]]
@@ -229,31 +221,28 @@ DIVD <- function(dat) {
       for (j in (i + 1):p) {
         if (all(X[, j] != 0)) {
           X_tmp_1[, count] <- X[, i] / X[, j]
-          head_1[count] <- paste("(", head_in[i], "/", head_in[j], ")", sep = "")
+          head_1[count] <- paste0("(", head_in[i], "/", head_in[j], ")")
         } else {
           head_1[count] <- "empty"
         }
         if (all(X[, i] != 0)) {
           X_tmp_2[, count] <- X[, j] / X[, i]
-          head_2[count] <- paste("(", head_in[j], "/", head_in[i], ")", sep = "")
+          head_2[count] <- paste0("(", head_in[j], "/", head_in[i], ")")
         } else {
           head_2[count] <- "empty"
         }
         count <- count + 1
       }
     }
-    idx_empty_1 <- which(head_1 == "empty")
-    idx_empty_2 <- which(head_2 == "empty")
+    idx_empty_1 <- (head_1 == "empty")
+    idx_empty_2 <- (head_2 == "empty")
 
-    if (length(idx_empty_1) != 0) {
-      X_tmp_1 <- as.matrix(X_tmp_1[, -idx_empty_1])
-      head_1 <- head_1[-idx_empty_1]
-    }
+    # Remove non-physical descriptors
+    X_tmp_1 <- as.matrix(X_tmp_1[, !idx_empty_1])
+    head_1 <- head_1[!idx_empty_1]
+    X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
+    head_2 <- head_2[!idx_empty_2]
 
-    if (length(idx_empty_2) != 0) {
-      X_tmp_2 <- as.matrix(X_tmp_2[, -idx_empty_2])
-      head_2 <- head_2[-idx_empty_2]
-    }
     dimen_1 <- dimen_2 <- NULL
   } else {
     for (i in 1:(p - 1)) {
@@ -265,7 +254,7 @@ DIVD <- function(dat) {
 
         if (all(X[, j] != 0)) {
           X_tmp_1[, count] <- X[, i] / X[, j]
-          head_1[count] <- paste("(", head_in[i], "/", head_in[j], ")", sep = "")
+          head_1[count] <- paste0("(", head_in[i], "/", head_in[j], ")")
 
           names <- union(names(dimen_i), names(dimen_j))
           names_i <- setdiff(names, names(dimen_i))
@@ -286,7 +275,7 @@ DIVD <- function(dat) {
 
         if (all(X[, i] != 0)) {
           X_tmp_2[, count] <- X[, j] / X[, i]
-          head_2[count] <- paste("(", head_in[j], "/", head_in[i], ")", sep = "")
+          head_2[count] <- paste0("(", head_in[j], "/", head_in[i], ")")
 
           names <- union(names(dimen_i), names(dimen_j))
           names_i <- setdiff(names, names(dimen_i))
@@ -308,20 +297,17 @@ DIVD <- function(dat) {
       }
     }
 
-    idx_empty_1 <- which(head_1 == "empty")
-    idx_empty_2 <- which(head_2 == "empty")
+    idx_empty_1 <- (head_1 == "empty")
+    idx_empty_2 <- (head_2 == "empty")
 
-    if (length(idx_empty_1) != 0) {
-      X_tmp_1 <- as.matrix(X_tmp_1[, -idx_empty_1])
-      head_1 <- head_1[-idx_empty_1]
-      dimen_1 <- dimen_1[-idx_empty_1]
-    }
+    # Remove non-physical descriptors
+    X_tmp_1 <- as.matrix(X_tmp_1[, !idx_empty_1])
+    head_1 <- head_1[!idx_empty_1]
+    dimen_1 <- dimen_1[!idx_empty_1]
 
-    if (length(idx_empty_2) != 0) {
-      X_tmp_2 <- as.matrix(X_tmp_2[, -idx_empty_2])
-      head_2 <- head_2[-idx_empty_2]
-      dimen_2 <- dimen_2[-idx_empty_2]
-    }
+    X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
+    head_2 <- head_2[!idx_empty_2]
+    dimen_2 <- dimen_2[!idx_empty_2]
   }
 
   X_out <- cbind(X_tmp_1, X_tmp_2)
@@ -350,7 +336,7 @@ MINUS_ABS <- function(dat) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- abs(X[, i] - X[, j])
-        head[count] <- paste("|", head_in[i], "-", head_in[j], "|", sep = "")
+        head[count] <- paste0("|", head_in[i], "-", head_in[j], "|")
         count <- count + 1
       }
     }
@@ -364,7 +350,7 @@ MINUS_ABS <- function(dat) {
         dimen_j <- dimen_j[order(names(dimen_j))]
         if (setequal(names(dimen_i), names(dimen_j)) && setequal(dimen_i, dimen_j)) {
           X_tmp[, count] <- abs(X[, i] - X[, j])
-          head[count] <- paste("|", head_in[i], "-", head_in[j], "|", sep = "")
+          head[count] <- paste0("|", head_in[i], "-", head_in[j], "|")
           dimen[[count]] <- dimen_i
         } else {
           head[count] <- "empty"
@@ -374,12 +360,11 @@ MINUS_ABS <- function(dat) {
       }
     }
 
-    idx_empty <- which(head == "empty")
-    if (length(idx_empty) > 0) {
-      X_tmp <- as.matrix(X_tmp[, -idx_empty])
-      head <- head[-idx_empty]
-      dimen <- dimen[-idx_empty]
-    }
+    # Remove non-physical descriptors
+    idx_empty <- (head == "empty")
+    X_tmp <- as.matrix(X_tmp[, !idx_empty])
+    head <- head[!idx_empty]
+    dimen <- dimen[!idx_empty]
   }
 
   data_out <- list(X = X_tmp,
@@ -417,7 +402,8 @@ binary <- function(data, sin_cos) {
       head <- c(head, data_abs_minus$head)
       dimen <- c(dimen, data_abs_minus$dimen)
     }
-    Phi <- list(X = X, head = unname(head), dimen = dimen)
+    colnames(X) <- unname(head)
+    Phi <- list(X = X, head = colnames(X), dimen = dimen)
 
     # Remove redundant descriptors
     Phi <- dataprocessing(Phi)
@@ -433,7 +419,7 @@ ABS <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) abs(x))
-  head <- sapply(head_in, function(x) paste("abs(", x, ")", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0("abs(", x, ")")))
   dimen <- dimen_in
 
   data_out <- list(X = X_tmp,
@@ -449,7 +435,7 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
   p <- ncol(X)
 
   X_tmp <- suppressWarnings(apply(X, 2, function(x) sqrt(abs(x))))
-  head <- sapply(head_in, function(x) paste(x, "^0.5", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0(x, "^0.5")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
@@ -459,7 +445,8 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
   neg_col <- apply(X, 2, function(x) any(x < 0))
   if (any(neg_col) == TRUE) {
     if (apply_pos_opt_on_neg_x == TRUE){
-      head[neg_col] <- paste("abs(", head_in[neg_col], ")^0.5", seq = "")
+      idx <- which(neg_col)
+      head[idx] <- unname(sapply(idx, function(x) paste0("abs(", head_in[x], ")^0.5")))
     } else {
       X_tmp <- as.matrix(X_tmp[, !neg_col])
       head <- head[!neg_col]
@@ -472,14 +459,12 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
   }
 
   NA_col <- apply(X_tmp, 2, anyNA)
-  if (any(NA_col == TRUE)) {
-    X_tmp <- as.matrix(X_tmp[, !NA_col])
-    head <- head[!NA_col]
-    if (is.null(dimen_in)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[!NA_col]
-    }
+  X_tmp <- as.matrix(X_tmp[, !NA_col])
+  head <- head[!NA_col]
+  if (is.null(dimen_in)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!NA_col]
   }
 
   data_out <- list(X = X_tmp,
@@ -495,7 +480,7 @@ INV <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- suppressWarnings(apply(X, 2, function(x) x^(-1)))
-  head <- sapply(head_in, function(x) paste(x, "^(-1)", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0(x, "^(-1)")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
@@ -503,14 +488,12 @@ INV <- function(dat) {
   }
 
   NA_col <- apply(X_tmp, 2, anyNA)
-  if (any(NA_col == TRUE)) {
-    X_tmp <- as.matrix(X_tmp[, !NA_col])
-    head <- head[!NA_col]
-    if (is.null(dimen_in)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[!NA_col]
-    }
+  X_tmp <- as.matrix(X_tmp[, !NA_col])
+  head <- head[!NA_col]
+  if (is.null(dimen_in)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!NA_col]
   }
 
   data_out <- list(X = X_tmp,
@@ -526,7 +509,7 @@ SQRE <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) x^2)
-  head <- sapply(head_in, function(x) paste(x, "^2", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0(x, "^2")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
@@ -539,23 +522,6 @@ SQRE <- function(dat) {
   return(data_out)
 }
 
-# CUBE <- function(dat){
-#   X = dat$X
-#   head_in = dat$head
-#   dimen_in = dat$dimen
-#   p = ncol(X)
-#
-#   X_tmp = apply(X, 2, function(x) x^3)
-#   head = sapply(head_in, function(x) paste(x, "^3", sep = ""))
-#   dimen = lapply(dimen_in, function(x) 3*x)
-#
-#   data_out = NULL
-#   data_out$X = X_tmp
-#   data_out$head = head
-#   data_out$dimen = dimen
-#   return(data_out)
-# }
-
 LOG <- function(dat, apply_pos_opt_on_neg_x) {
   X <- as.matrix(dat$X)
   head_in <- dat$head
@@ -563,19 +529,20 @@ LOG <- function(dat, apply_pos_opt_on_neg_x) {
   p <- ncol(X)
 
   X_tmp <- suppressWarnings(apply(X, 2, function(x) log(abs(x))))
-  head <- sapply(head_in, function(x) paste("log(", x, ")", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0("log(", x, ")")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
-    dimen <- lapply(dimen_in, function(x) 0 * x)
+    dimen <- lapply(dimen_in, function(x) 0*x)
   }
 
   neg_col <- apply(X, 2, function(x) any(x < 0))
   if (any(neg_col) == TRUE) {
     if (apply_pos_opt_on_neg_x == TRUE){
-      head[neg_col] <- paste("log(abs(", head_in[neg_col], "))", seq = "")
+      idx <- which(neg_col)
+      head[idx] <- unname(sapply(idx, function(x) paste0("log(abs(", head_in[x], "))")))
     } else {
-      X_tmp <- as.matrix(X[, !neg_col])
+      X_tmp <- as.matrix(X_tmp[, !neg_col])
       head <- head[!neg_col]
       if (is.null(dimen_in)) {
         dimen <- NULL
@@ -586,14 +553,12 @@ LOG <- function(dat, apply_pos_opt_on_neg_x) {
   }
 
   NA_col <- apply(X_tmp, 2, anyNA)
-  if (any(NA_col == TRUE)) {
-    X_tmp <- as.matrix(X_tmp[, !NA_col])
-    head <- head[!NA_col]
-    if (is.null(dimen_in)) {
-      dimen <- NULL
-    } else {
-      dimen <- dimen[!NA_col]
-    }
+  X_tmp <- as.matrix(X_tmp[, !NA_col])
+  head <- head[!NA_col]
+  if (is.null(dimen_in)) {
+    dimen <- NULL
+  } else {
+    dimen <- dimen[!NA_col]
   }
 
   data_out <- list(X = X_tmp,
@@ -609,11 +574,11 @@ EXP <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) exp(x))
-  head <- sapply(head_in, function(x) paste("exp(", x, ")", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0("exp(", x, ")")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
-    dimen <- lapply(dimen_in, function(x) 0 * x)
+    dimen <- lapply(dimen_in, function(x) 0*x)
   }
 
   data_out <- list(X = X_tmp,
@@ -629,11 +594,11 @@ SIN <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) sin(pi * x))
-  head <- sapply(head_in, function(x) paste("sin(pi*", x, ")", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0("sin(pi*", x, ")")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
-    dimen <- lapply(dimen_in, function(x) 0 * x)
+    dimen <- lapply(dimen_in, function(x) 0*x)
   }
 
   data_out <- list(X = X_tmp,
@@ -649,11 +614,11 @@ COS <- function(dat) {
   p <- ncol(X)
 
   X_tmp <- apply(X, 2, function(x) cos(pi * x))
-  head <- sapply(head_in, function(x) paste("cos(pi*", x, ")", sep = ""))
+  head <- unname(sapply(head_in, function(x) paste0("cos(pi*", x, ")")))
   if (is.null(dimen_in)) {
     dimen <- NULL
   } else {
-    dimen <- lapply(dimen_in, function(x) 0 * x)
+    dimen <- lapply(dimen_in, function(x) 0*x)
   }
 
   data_out <- list(X = X_tmp,
@@ -702,7 +667,8 @@ unary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
                  data_exp$dimen)
     }
 
-    Phi <- list(X = X, head = unname(head), dimen = dimen)
+    colnames(X) <- unname(head)
+    Phi <- list(X = X, head = colnames(X), dimen = dimen)
 
     # Remove redundant descriptors
     Phi <- dataprocessing(Phi)

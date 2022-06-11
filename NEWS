@@ -1,3 +1,24 @@
+iBART v0.0.2.7 (Release date: 2022-05-16)
+==============
+
+Changes:
+
+* Add permutation for ABC forest
+
+iBART v0.0.2.6 (Release date: 2022-05-14)
+==============
+
+Changes:
+
+* Bugs fixed
+
+iBART v0.0.2.5 (Release date: 2022-05-05)
+==============
+
+Changes:
+
+* Added a new BART-based variable selection procedure - ABC Bayesian Forest
+
 iBART v0.0.2.4 (Release date: 2022-04-04)
 ==============
 

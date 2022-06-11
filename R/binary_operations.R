@@ -1,7 +1,7 @@
 binaryOperation <- function(BART_output, sin_cos) {
   # Binary operations
   Bi_opt <- binary(BART_output, sin_cos)
-  colnames(Bi_opt$X) <- Bi_opt$head
+  # colnames(Bi_opt$X) <- Bi_opt$head
 
   # Attach input data
   Bi_opt$X_selected <- BART_output$X_selected

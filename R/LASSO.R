@@ -1,3 +1,4 @@
+#' @import glmnet
 LASSO <- function(X, y, head, dimen, train_idx = NULL) {
   if (is.null(train_idx)) {
     X_train <- X
@@ -26,13 +27,12 @@ LASSO <- function(X, y, head, dimen, train_idx = NULL) {
 
   beta <- coef(cvfit, s = "lambda.min")
   pos_idx <- beta@i[-1] # remove intercept index
-  # pos_idx <- pos_idx[-1]
 
   # Check if LASSO selected any variable
   if (length(pos_idx) == 0) {
-    stop("LASSO did not select any variable, trying another seed...")
+    stop("LASSO did not select any variable, trying different parameters...")
   } else {
-    X_selected <- as.matrix(X[, pos_idx])
+    X_selected <- as.matrix(X[, pos_idx]) # in case length(pos_idx) == 1
     head_selected <- head[pos_idx]
     if (is.null(dimen)) {
       dimen_selected <- NULL

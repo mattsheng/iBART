@@ -15,6 +15,9 @@ iBART(
   num_iterations_after_burn_in = 5000,
   num_reps_for_avg = 10,
   num_permute_samples = 50,
+  nreps = 2000,
+  top = (2000 * 0.05 * 2),
+  perm = FALSE,
   opt = 2,
   sin_cos = FALSE,
   apply_pos_opt_on_neg_x = TRUE,
@@ -26,6 +29,7 @@ iBART(
   K = ifelse(Lzero, 5L, 0L),
   AIC = FALSE,
   standardize = TRUE,
+  parallel = FALSE,
   writeLog = FALSE,
   count = NULL,
   seed = NULL
@@ -52,6 +56,12 @@ iBART(
 
 \item{num_permute_samples}{BART parameter: number of permutations of the response to be made to generate the “null” permutation distribution. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_permute_samples = 50}.}
 
+\item{nreps}{ABC forest parameter: number of ABC iterations}
+
+\item{top}{ABC forest parameter: number of forests to keep for marginal posterior inclusion probability calculation}
+
+\item{perm}{Whether to use permutation for ABC forest}
+
 \item{opt}{If \code{opt = 1}, unary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.}
 
 \item{sin_cos}{Logical flag for using \eqn{sin(\pi*x)} and \eqn{cos(\pi*x)} to generate descriptors. This is useful if you think there is periodic relationship between predictors and response. Default is \code{sin_cos = FALSE}.}
@@ -74,6 +84,8 @@ iBART(
 
 \item{standardize}{Logical flag for data standardization prior to model fitting in BART and LASSO. Default is \code{standardize = TRUE}.}
 
+\item{parallel}{Logical flag for running ABC forest in parallel mode}
+
 \item{writeLog}{Logical flag for writing log file. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.}
 
 \item{count}{Internal parameter. Default is \code{count = NULL}.}
@@ -89,6 +101,7 @@ A list of iBART output.
 \item{iBART_sel_size}{The number of descriptors selected by iBART in each iteration.}
 \item{iBART_in_sample_RMSE}{In sample RMSE of the LASSO model.}
 \item{iBART_out_sample_RMSE}{Out of sample RMSE of the LASSO model if \code{out_sample == TRUE}.}
+\item{ABC_ip}{If ABC Bayesian Tree was used, marginal inclusion probability of the descriptors at the last iteration.}
 \item{Lzero_model}{The \eqn{l_0}-penalized regression model fitted on the iBART selected descriptors for \eqn{1 \le k \le K}.}
 \item{Lzero_names}{The name of the best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 \item{Lzero_in_sample_RMSE}{In sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}

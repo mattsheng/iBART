@@ -1,3 +1,4 @@
+#' @import bartMachine
 BART_iter <- function(X, y, head, dimen,
                       BART_var_sel_method = "global_se",
                       X_selected = NULL,
