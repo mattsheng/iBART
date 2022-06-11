@@ -6,10 +6,13 @@ Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre"), email = "sy53@rice
 Description: An iterative method for constructing and selecting complex nonlinear descriptors that reveals the underlying nonlinear association between the response and the predictors.
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Depends: R (>= 4.0.0)
-Imports: bartMachine (>= 1.2.6), glmnet (>= 4.1-1), foreach, withr, stats, ABCforest
+Imports: bartMachine (>= 1.2.6), glmnet (>= 4.1-1), foreach, withr, stats
 SystemRequirements: Java (>= 8.0)
 Maintainer: Shengbin Ye <sy53@rice.edu>
+NeedsCompilation: no
+Packaged: 2022-06-05 15:34:45 UTC; Shengbin
+Author: Shengbin Ye [aut, cre] (<https://orcid.org/0000-0001-8767-2595>),
+  Meng Li [aut]

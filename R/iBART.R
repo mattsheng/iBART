@@ -13,9 +13,6 @@
 #' @param num_iterations_after_burn_in BART parameter: number of MCMC samples to draw from the posterior distribution of \eqn{hat{f}(x)}. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_iterations_after_burn_in = 5000}.
 #' @param num_reps_for_avg BART parameter: number of replicates to over over to for the BART model's variable inclusion proportions. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_reps_for_avg = 10}.
 #' @param num_permute_samples BART parameter: number of permutations of the response to be made to generate the “null” permutation distribution. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_permute_samples = 50}.
-#' @param nreps ABC forest parameter: number of ABC iterations
-#' @param top ABC forest parameter: number of forests to keep for marginal posterior inclusion probability calculation
-#' @param perm Whether to use permutation for ABC forest
 #' @param opt If \code{opt = 1}, unary operators are applied first. If \code{opt = 2}, binary operators are applied first. Default is \code{opt = 2}.
 #' @param sin_cos Logical flag for using \eqn{sin(\pi*x)} and \eqn{cos(\pi*x)} to generate descriptors. This is useful if you think there is periodic relationship between predictors and response. Default is \code{sin_cos = FALSE}.
 #' @param apply_pos_opt_on_neg_x Logical flag for applying non-negative-valued operators, such as \eqn{\sqrt x} and \eqn{log(x)}, when some values of \eqn{x} is negative. If \code{apply_pos_opt_on_neg_x == TRUE}, apply absolute value operator first then non-negative-valued operator, i.e. generate \eqn{\sqrt |x|} and \eqn{log(|x|)} instead. Default is \code{apply_pos_opt_on_neg_x = TRUE}.
@@ -27,7 +24,6 @@
 #' @param K If \code{Lzero == TRUE}, \code{K} sets the maximum number of descriptors to be selected.
 #' @param AIC If \code{Lzero == TRUE}, logical flag for selecting best number of descriptors using AIC. Possible number of descriptors are \eqn{1 \le k \le K}.
 #' @param standardize Logical flag for data standardization prior to model fitting in BART and LASSO. Default is \code{standardize = TRUE}.
-#' @param parallel Logical flag for running ABC forest in parallel mode
 #' @param writeLog Logical flag for writing log file. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.
 #' @param count Internal parameter. Default is \code{count = NULL}.
 #' @param seed Optional: sets the seed in both R and Java. Default is \code{seed = NULL} which does not set the seed in R nor Java.
@@ -39,7 +35,6 @@
 #' \item{iBART_sel_size}{The number of descriptors selected by iBART in each iteration.}
 #' \item{iBART_in_sample_RMSE}{In sample RMSE of the LASSO model.}
 #' \item{iBART_out_sample_RMSE}{Out of sample RMSE of the LASSO model if \code{out_sample == TRUE}.}
-#' \item{ABC_ip}{If ABC Bayesian Tree was used, marginal inclusion probability of the descriptors at the last iteration.}
 #' \item{Lzero_model}{The \eqn{l_0}-penalized regression model fitted on the iBART selected descriptors for \eqn{1 \le k \le K}.}
 #' \item{Lzero_names}{The name of the best \eqn{k}D descriptors selected by the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
 #' \item{Lzero_in_sample_RMSE}{In sample RMSE of the \eqn{l_0}-penalized regression model for \eqn{1 \le k \le K}.}
@@ -113,101 +108,101 @@ iBART <- function(X = NULL, y = NULL,
                   writeLog = FALSE,
                   count = NULL,
                   seed = NULL) {
-
+  
   #### Check inputs ####
   if ((is.null(X)) || is.null(y)){
     stop("You need to give iBART a training set by specifying X and y \n")
   }
-
+  
   if (!is.matrix(X)){
     stop("The training data X must be a matrix", call. = FALSE)
   }
-
+  
   if (ncol(X) == 0){
     stop("Your data matrix must have at least one predictor.")
   }
-
+  
   if (nrow(X) == 0){
     stop("Your data matrix must have at least one observation.")
   }
-
+  
   if (length(y) != nrow(X)){
     stop("The number of responses must be equal to the number of observations in the training data X.")
   }
-
-  if (!(BART_var_sel_method %in% c("global_se", "global_max", "local", "abc"))) {
-    stop("BART_var_sel_method must be \"global_se\", \"global_max\", \"local\", or \"abc\"!!")
+  
+  if (!(BART_var_sel_method %in% c("global_se", "global_max", "local"))) {
+    stop("BART_var_sel_method must be \"global_se\", \"global_max\", or \"local\"!!")
   }
-
+  
   if (length(num_trees) == 1) {
     num_trees <- rep(num_trees, iter)
   } else if ((length(num_trees) > 1) && (length(num_trees) != iter)) {
     stop("Length of number of trees must equal to number of iterations!")
   }
-
+  
   if (length(num_burn_in) == 1) {
     num_burn_in <- rep(num_burn_in, iter)
   } else if ((length(num_burn_in) > 1) && (length(num_burn_in) != iter)) {
     stop("Length of number of burn-in must equal to number of iterations!")
   }
-
+  
   if (length(num_iterations_after_burn_in) == 1) {
     num_iterations_after_burn_in <- rep(num_iterations_after_burn_in, iter)
   } else if ((length(num_iterations_after_burn_in) > 1) && (length(num_iterations_after_burn_in) != iter)) {
     stop("Length of number of iteration after burn-in must equal to number of iterations!")
   }
-
+  
   if (length(num_reps_for_avg) == 1) {
     num_reps_for_avg <- rep(num_reps_for_avg, iter)
   } else if ((length(num_reps_for_avg) > 1) && (length(num_reps_for_avg) != iter)) {
     stop("Length of number of replicates for average must equal to number of iterations!")
   }
-
+  
   if (length(num_permute_samples) == 1) {
     num_permute_samples <- rep(num_permute_samples, iter)
   } else if ((length(num_permute_samples) > 1) && (length(num_permute_samples) != iter)) {
     stop("Length of number of permutations of the response must equal to number of iterations!")
   }
-
+  
   if ((!is.numeric(opt)) || (!(opt %in% c(1, 2)))){
     stop("opt must be a numeric value of either 1 or 2.")
   }
-
+  
   if ((!is.numeric(iter)) || (iter <= 0)){
     stop("iter must be a positive integer.")
   }
-
+  
   if ((!is.numeric(hold)) || (hold > iter)) {
     stop("hold must be an integer less than iter!")
   }
-
+  
   if (!is.logical(out_sample)){
     stop("out_sample must be a logical variable.")
   }
-
+  
   if ((!is.numeric(train_ratio)) || (train_ratio <= 0) || (train_ratio > 1)){
     stop("train_ratio must be a number between 0 and 1.")
   }
-
+  
   if (!is.logical(Lzero)){
     stop("Lzero must be a logical variable.")
   }
-
+  
   if (!is.logical(writeLog)){
     stop("writeLog must be a logical variable.")
   }
-
+  
   # Get column names if primary feature names are not provided
   if (is.null(head)) {
     colnames(X) <- head <- paste("V", seq(from = 1, to = ncol(X), by = 1), sep = "")
   } else {
     colnames(X) <- head
   }
-
+  
   if(!is.null(seed)){
     set.seed(seed)
   }
-
+  
   #### Generating training set ####
   if (out_sample == TRUE) {
     n <- nrow(X)
@@ -215,10 +210,10 @@ iBART <- function(X = NULL, y = NULL,
   } else {
     train_idx <- NULL
   }
-
+  
   # Calculate marginal correlation
   cor_mat <- suppressWarnings(abs(cor(x = X, y = y)))[, 1] # scalars will cause warning
-
+  
   # Remove X cols that are independent of Y
   indep_idx <- is.na(cor_mat)
   X <- X[, !indep_idx]
@@ -226,76 +221,55 @@ iBART <- function(X = NULL, y = NULL,
   if (!is.null(dimen)) {
     dimen <- dimen[!indep_idx]
   }
-
+  
   # Save original training data
   X_org <- as.data.frame(X)
-
+  
   # Capture size of iBART generated space and selected space
   iBART_gen_size <- rep(0, iter + 1)
   iBART_sel_size <- rep(0, iter + 1)
   iBART_gen_size[1] <- ncol(X)
-
+  
   #### iBART descriptor generation and selection ####
   start_time <- Sys.time()
   cat("Start iBART descriptor generation and selection... \n")
   for (i in 1:iter) {
     cat(paste("Iteration", i, "\n", sep = " "))
-
+    
     ### BART variable selection
     if ((hold > 1) & (i <= hold) & (i > 1)) {
       cat("Skipping iBART descriptor selection... \n")
       BART_selection <- Operator_output
     } else {
       cat("iBART descriptor selection... \n")
-
-      ### ABC Bayesian Forest ###
-      if (BART_var_sel_method == "abc") {
-        BART_selection <- ABC_iter(X = X, y = y,
-                                   head = head,
-                                   dimen = dimen,
-                                   X_selected = if (i == 1) NULL else X_selected,
-                                   head_selected = if (i == 1) NULL else head_selected,
-                                   dimen_selected = if (i == 1) NULL else dimen_selected,
-                                   nreps = nreps,
-                                   num_trees = num_trees[i],
-                                   num_burn_in = num_burn_in[i],
-                                   num_iterations_after_burn_in = num_iterations_after_burn_in[i],
-                                   top = top,
-                                   perm = perm,
-                                   standardize = standardize,
-                                   train_idx = train_idx,
-                                   seed = seed,
-                                   parallel = parallel,
-                                   iter = i)
-      } else {
-        ### BART-G.SE ###
-        BART_selection <- BART_iter(X = X, y = y,
-                                    head = head,
-                                    dimen = dimen,
-                                    BART_var_sel_method = BART_var_sel_method,
-                                    X_selected = if (i == 1) NULL else X_selected,
-                                    head_selected = if (i == 1) NULL else head_selected,
-                                    dimen_selected = if (i == 1) NULL else dimen_selected,
-                                    num_trees = num_trees[i],
-                                    num_burn_in = num_burn_in[i],
-                                    num_iterations_after_burn_in = num_iterations_after_burn_in[i],
-                                    num_reps_for_avg = num_reps_for_avg[i],
-                                    num_permute_samples = num_permute_samples[i],
-                                    standardize = standardize,
-                                    train_idx = train_idx,
-                                    seed = seed)
-      }
-
+      
+      ### BART-G.SE ###
+      BART_selection <- BART_iter(X = X, y = y,
+                                  head = head,
+                                  dimen = dimen,
+                                  BART_var_sel_method = BART_var_sel_method,
+                                  X_selected = if (i == 1) NULL else X_selected,
+                                  head_selected = if (i == 1) NULL else head_selected,
+                                  dimen_selected = if (i == 1) NULL else dimen_selected,
+                                  num_trees = num_trees[i],
+                                  num_burn_in = num_burn_in[i],
+                                  num_iterations_after_burn_in = num_iterations_after_burn_in[i],
+                                  num_reps_for_avg = num_reps_for_avg[i],
+                                  num_permute_samples = num_permute_samples[i],
+                                  standardize = standardize,
+                                  train_idx = train_idx,
+                                  seed = seed)
+      
       # If iBART didn't select anything in 1st iter, return 1st iter selection result
       if (i == 1 & is.null(BART_selection$pos_idx)) {
         return(BART_selection)
       }
-
+      
       # Update selected descriptors
       if (i == 1) pos_idx_old <- NULL else pos_idx_old <- pos_idx_new
       pos_idx_new <- BART_selection$pos_idx
       BART_selection$X <- BART_selection$X_selected
-
+      
       # If iBART didn't select anything in 2 consecutive iterations
       if ((length(pos_idx_old) == 0) & (length(pos_idx_new) == 0)) {
         message("iBART didn't select anything in 2 consecutive iterations.")
@@ -303,10 +277,10 @@ iBART <- function(X = NULL, y = NULL,
         return(BART_selection)
       }
     }
-
+    
     # Record descriptor selection size per iteration
     iBART_sel_size[i] <- ncol(BART_selection$X_selected)
-
+    
     ### Feature engineering via operations ###
     # Unary first then Binary
     if (opt == 1) {
@@ -327,19 +301,19 @@ iBART <- function(X = NULL, y = NULL,
         Operator_output <- unaryOperation(BART_selection, sin_cos, apply_pos_opt_on_neg_x)
       }
     }
-
+    
     ### Attach output ###
     X <- as.matrix(Operator_output$X) # in case Operator_output$X is a vector
     head <- Operator_output$head
     dimen <- Operator_output$dimen
-
+    
     X_selected <- as.matrix(Operator_output$X_selected) # in case Operator_output$X_selected is a vector
     head_selected <- Operator_output$head_selected
     dimen_selected <- Operator_output$dimen_selected
-
+    
     iBART_gen_size[i + 1] <- ncol(X)
   }
-
+  
   #### LASSO variable selection ####
   cat("BART iteration done! \n")
   cat("LASSO descriptor selection... \n")
@@ -347,7 +321,7 @@ iBART <- function(X = NULL, y = NULL,
                            head = head,
                            dimen = dimen,
                            train_idx = train_idx)
-
+  
   #### Attach output ####
   X_selected <- LASSO_selection$X_selected
   colnames(X_selected) <- LASSO_selection$head_selected
@@ -355,9 +329,9 @@ iBART <- function(X = NULL, y = NULL,
   dimen_selected <- LASSO_selection$dimen_selected
   LASSO_in_sample_RMSE <- LASSO_selection$In_sample_RMSE
   LASSO_out_sample_RMSE <- LASSO_selection$Out_sample_RMSE
-
+  
   iBART_sel_size[iter + 1] <- ncol(X_selected)
-
+  
   # Training and testing split if needed
   if (is.null(train_idx)) {
     X_train <- X_selected
@@ -368,12 +342,12 @@ iBART <- function(X = NULL, y = NULL,
     # Training data
     X_train <- X_selected[train_idx, ]
     y_train <- y[train_idx]
-
+    
     # Testing data
     X_test <- X_selected[-train_idx, ]
     y_test <- y[-train_idx]
   }
-
+  
   # Standardize design matrix if needed
   if (standardize == TRUE) {
     train_col_mean <- colMeans(X_train, na.rm = TRUE)
@@ -386,14 +360,14 @@ iBART <- function(X = NULL, y = NULL,
       # }
     }
   }
-
+  
   #### L-zero regression ####
   if (Lzero == TRUE){
     p <- ncol(X_train)
     Lzero_models <- Lzero_names <- list()
     rmse_k_model_in <- rmse_k_model_out <- rep(NA, min(p, K))
     if (AIC == TRUE) aic <- c()
-
+    
     # Only perform L-zero if >= 2 descriptors were selected
     if (p > 1) {
       cat("L-zero regression... \n")
@@ -420,11 +394,11 @@ iBART <- function(X = NULL, y = NULL,
       Lzero_names <- aic_names <- head_selected
     }
   }
-
+  
   end_time <- Sys.time()
   runtime <- as.numeric(end_time - start_time, units = "secs")
   cat(paste("Total time:", runtime, "secs \n", sep = " "))
-
+  
   #### Generate output log to a .txt file ####
   if (writeLog == TRUE) {
     if (is.null(count)) {
@@ -433,20 +407,20 @@ iBART <- function(X = NULL, y = NULL,
       filename <- paste("output", count, ".txt", sep = "")
     }
     data_log <- file(filename, "w")
-
+    
     ############# Print Output ##############
     writeLines(paste("seed:", seed), data_log)
     writeLines("iBART in-sample RMSE:", data_log)
     writeLines(c(as.character(LASSO_in_sample_RMSE), "\n"), data_log)
-
+    
     if (out_sample == TRUE) {
       writeLines("iBART out-sample RMSE:", data_log)
       writeLines(c(as.character(LASSO_out_sample_RMSE), "\n"), data_log)
     }
-
+    
     writeLines("Selected Descriptors:", data_log)
     writeLines(c(head_selected, "\n"), data_log)
-
+    
     if (Lzero == TRUE) {
       for (k in 1:min(p, K)){
         writeLines("----------------", data_log)
@@ -463,7 +437,7 @@ iBART <- function(X = NULL, y = NULL,
     writeLines(paste("Time:", runtime), data_log)
     close(data_log)
   }
-
+  
   #### Save ouputs ####
   iBART_output <- list(iBART_model = LASSO_selection$LASSO_model,
                        X_selected = X_selected,
@@ -472,7 +446,6 @@ iBART <- function(X = NULL, y = NULL,
                        iBART_sel_size = iBART_sel_size,
                        iBART_in_sample_RMSE = LASSO_in_sample_RMSE,
                        iBART_out_sample_RMSE = if (out_sample) LASSO_out_sample_RMSE else NA,
-                       ABC_ip = if (BART_var_sel_method == "abc") BART_selection$ABC_ip else NULL,
                        Lzero_model = if (Lzero) Lzero_models else NULL,
                        Lzero_names = if (Lzero) Lzero_names else NULL,
                        Lzero_in_sample_RMSE = if (Lzero) rmse_k_model_in else NA,
