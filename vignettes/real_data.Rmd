@@ -1,0 +1,127 @@
+---
+title: "Single-Atom Catalysis Data Analysis"
+output: rmarkdown::html_vignette
+urlcolor: blue
+vignette: >
+  %\VignetteIndexEntry{Single-Atom Catalysis Data Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Data Description{#data}
+The single-atom catalysis data is stored in `data/single_atom_catalysis.RData`, and the raw data is available at [this Github repo](https://github.com/tsenftle/Metal-Oxide-LASSO-lo). Here we model the metal/oxide binding energy (the response variable $y$) using $p=59$ physical properties of the transition metals and the oxide supports (the primary features $X$). The response variable $y$ and the primary features $X$ are treated as continuous variables, and we aim to use **iBART** to find an interpretable model with high predictive performance for the metal/oxide binding energy.
+
+A total of 13 transition metals ($\text{Cu, Ag, Au, Ni, Pd, Pt,}$ $\text{Co, Rh, Ir, Fe, Ru, Mn, V}$) and 7 oxide supports ($\text{CeO}_2(111)$, $\text{MgO}(100)$, $\text{CeO}_2(110)$, $\text{TbO}_2(111)$, $\text{ZnO}(100)$, $\text{TiO}_2(011)$, $\alpha\text{-Al}_2\text{O}_3(0001)$) were studied in the dataset, making a total of $n = 13 \times 7 = 91$ metal/oxide pairs. The primary feature matrix $X$ contains various physical properties of the transition metals and the oxide supports including Pauling Electronegativity ($\chi_P$), $(n-1)^{\text{th}}$ and $n^{\text{th}}$ Ionization Energies ($\text{IE}_{n-1}$, $\text{IE}_n$), Electron Affinity ($\text{EA}$), $\text{HOMO}$ Energy, $\text{LUMO}$ Energy, Heat of Sublimation ($\Delta H_{\text{sub}}$), Oxidation Energy of oxide support ($\Delta H_{\text{f,ox,bulk}}$), Oxide Formation Enthalpy ($\Delta H_{\text{f,ox}}$), Zunger Orbital Radius ($r$), Atomic Number ($Z$), Meidema Parameters of metal atoms $(\eta^{1/3}, \varphi)$, Valance Electron ($\text{N}_{\text{val}}$), Oxygen Vacancy Energy of oxide support ($\Delta\text{E}_{\text{vac}}$), Workfunction of oxide support $(\text{WF})$, Surface Energy ($\gamma$), Coordination Number ($\text{CN}$), and Bond Valence of surface metal atom ($\text{BV}$). Most of these physical properties are defined for both the transition metals and the oxide supports while a few of them are only defined for either the transition metals or the oxide supports. A detailed description of the 59 primary features $X$ can be find in pages 11--14 of [the data supplementary materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41929-018-0094-5/MediaObjects/41929_2018_94_MOESM1_ESM.pdf) published by O'Connor et al.
+
+
+## Package and Data Loading
+Before loading the **iBART** package, we must allocate enough memory for Java to avoid out of memory errors.
+
+```{r load package}
+# Allocate 10GB of memory for Java. Must be called before library(iBART)
+options(java.parameters = "-Xmx10g") 
+library(iBART)
+```
+Next, we load the real data set and examine what data are needed to run iBART.
+```{r load data}
+load("../data/catalysis.rda")    # load data
+list2env(catalysis, globalenv()) # extract elements of catalysis to global environment
+summary(catalysis)
+```
+The data set consists of 4 objects:
+
++ `X`: a `matrix` of physical properties of the transition metals and the oxide supports described in [Data Description](#data). These are our primary features (predictors).
++ `y`: a `numeric` vector of metal/oxide binding energy described in [Data Description](#data). This is our response variable.
++ `head`: a `character` vector storing the column names of `X`.
++ `unit`: a (optional) `list` of named numeric vectors. This stores the unit information of the primary features `X`. This can be generated using the helper function `generate_unit(unit, dimension)`. See `?iBART::generate_unit` for more detail.
+
+## iBART
+Now let's apply iBART to this data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we specify `opt = c("binary", "unary", "binary")`, meaning there will be 3 iterations and we want to alternate between binary and unary operators, starting with binary operators $\mathcal{O}_b$. We can also use all operators $O$ in an iteration. For example, `opt = c("all", "all")` will apply all operators $O$ for 2 iterations. 
+```{r iBART}
+iBART_results <- iBART(X = X, y = y,
+                       head = head,  # colnames of X
+                       unit = unit,  # units of X
+                       opt = c("binary", "unary", "binary"), # binary operator first
+                       out_sample = FALSE,
+                       Lzero = TRUE,
+                       K = 5, # maximum descriptors in l-zero model
+                       standardize = FALSE,
+                       seed = 888)
+```
+`iBART()` returns many interesting outputs. For example, `iBART_results$iBART_gen_size` and `iBART_results$iBART_sel_size` store dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction.
+
+```{r size_plot, fig.width=7, fig.height=3.5}
+library(ggplot2)
+df_dim <- data.frame(dim = c(iBART_results$iBART_sel_size, iBART_results$iBART_gen_size),
+                     iter = rep(0:3, 2),
+                     type = rep(c("Selected", "Generated"), each = 4))
+ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
+  theme(text = element_text(size = 15), legend.title = element_blank()) +
+  geom_line(size = 1) +
+  geom_point(size = 3, shape = 21, fill = "white") +
+  geom_text(data = df_dim, aes(label = dim, y = dim + 40, group = type),
+            position = position_dodge(0), size = 5, colour = "blue") +
+  labs(x = "Iteration", y = "Number of descriptors") +
+  scale_x_continuous(breaks = c(0, 1, 2, 3))
+```
+
+We can access the selected $k$-descriptor via `iBART_results$Lzero_names` and the corresponding regression model in `iBART_results$Lzero_models`. For instance, the selected 3-descriptor model is
+
+```{r k-descriptor}
+iBART_results$Lzero_names[[3]]
+summary(iBART_results$Lzero_models[[3]])
+```
+
+## OIS vs non-OIS
+The OIS model differs from the non-OIS model in that the former builds on nonlinear descriptors (composition of $\mathcal{O}$ on $X$) while the latter builds on the primary features $X$. The OIS model has many advantages. In particular, it reveals interpretable nonlinear relationship between $y$ and $X$, and improves prediction accuracy over a simple linear regression model (or non-OIS model). We showcase the improved accuracy over non-OIS model using Figure 7 in the paper.
+
+```{r OIS vs non-OIS, fig.width=7, fig.height=3.5}
+# Train a non-OIS model with 3 predictors
+set.seed(123)
+model_no_OIS <- k_var_model(X_train = X, y_train = y, k = 3, parallel = FALSE)
+
+#### Figure 7 ####
+library(ggpubr)
+model_OIS <- iBART_results$Lzero_model[[3]]
+
+# Prepare data for plotting
+data_OIS <- data.frame(y = y, y_hat = model_OIS$fitted.values)
+data_no_OIS <- data.frame(y = y, y_hat = model_no_OIS$models$fitted.values)
+
+p1 <- ggplot(data_OIS, aes(x = y_hat, y = y)) +
+  geom_point() +
+  geom_abline() +
+  xlim(c(min(data_OIS$y_hat, data_OIS$y) - 0.2, max(data_OIS$y_hat, data_OIS$y) + 0.2)) +
+  ylim(c(min(data_OIS$y_hat, data_OIS$y) - 0.2, max(data_OIS$y_hat, data_OIS$y) + 0.2)) +
+  xlab("") +
+  ylab("") +
+  annotate("text", x = -12, y = -3, parse = TRUE,
+           label = paste("R^{2} ==", round(summary(model_OIS)$r.squared, 4)))
+p2 <- ggplot(data_no_OIS, aes(x = y_hat, y = y)) +
+  geom_point() +
+  geom_abline() +
+  xlim(c(min(data_no_OIS$y_hat, data_no_OIS$y) - 0.2, max(data_no_OIS$y_hat, data_no_OIS$y) + 0.2)) +
+  ylim(c(min(data_no_OIS$y_hat, data_no_OIS$y) - 0.2, max(data_no_OIS$y_hat, data_no_OIS$y) + 0.2)) +
+  xlab("") +
+  ylab("") +
+  annotate("text", x = -12, y = -3, parse = TRUE,
+           label = paste("R^{2} ==", round(summary(model_no_OIS$models)$r.squared, 4)))
+fig <- ggarrange(p1, p2,
+                 labels = c("OIS", "non-OIS"),
+                 ncol = 2, nrow = 1)
+annotate_figure(fig,
+                bottom = text_grob("Predicted binding energy from descriptors (eV)"),
+                left = text_grob("DFT binding energy (eV)", rot = 90))
+```
+
+## R Session Info
+```{r sessioninfo}
+sessionInfo()
+```
