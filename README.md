@@ -1,3 +1,7 @@
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/mattsheng/iBART/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mattsheng/iBART/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 # iBART
 
 This is a R-Java implementation of iBART found in Ye, Senftle, & Li [Operator-induced structural variable selection for identifying materials genes](https://arxiv.org/abs/2110.10195). This R package largely depends on the R package [`bartMachine`](https://github.com/kapelner/bartMachine) for its BART-G.SE variable selection implementation.
