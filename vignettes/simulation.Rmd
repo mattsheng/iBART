@@ -48,6 +48,9 @@ At Iteration 0 (base iteration), iBART determines which of the primary features,
 #### iBART ####
 iBART_sim <- iBART(X = X, y = y,
                    head = colnames(X),
+                   num_burn_in = 5000,                   # lower value for faster run
+                   num_iterations_after_burn_in = 1000,  # lower value for faster run
+                   num_permute_samples = 20,             # lower value for faster run
                    opt = c("unary"), # only apply unary operators after base iteration
                    sin_cos = TRUE,
                    apply_pos_opt_on_neg_x = FALSE,
