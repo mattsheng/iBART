@@ -44,22 +44,27 @@ The data set consists of 4 objects:
 
 ## iBART
 Now let's apply iBART to this data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we specify `opt = c("binary", "unary", "binary")`, meaning there will be 3 iterations and we want to alternate between binary and unary operators, starting with binary operators $\mathcal{O}_b$. We can also use all operators $O$ in an iteration. For example, `opt = c("all", "all")` will apply all operators $O$ for 2 iterations. 
-```{r iBART}
-iBART_results <- iBART(X = X, y = y,
-                       head = head,  # colnames of X
-                       unit = unit,  # units of X
-                       opt = c("binary", "unary", "binary"), # binary operator first
-                       out_sample = FALSE,
-                       Lzero = TRUE,
-                       K = 5, # maximum descriptors in l-zero model
-                       standardize = FALSE,
-                       seed = 888)
+```{r iBART, eval=FALSE}
+iBART_real_data <- iBART(X = X, y = y,
+                         head = head,  # colnames of X
+                         unit = unit,  # units of X
+                         opt = c("binary", "unary", "binary"), # binary operator first
+                         out_sample = FALSE,
+                         Lzero = TRUE,
+                         K = 5, # maximum descriptors in l-zero model
+                         standardize = FALSE,
+                         seed = 888)
 ```
-`iBART()` returns many interesting outputs. For example, `iBART_results$iBART_gen_size` and `iBART_results$iBART_sel_size` store dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction.
+
+```{r load result, echo=FALSE}
+load("../data/iBART_real_data.rda")             # load full result
+```
+
+To save time, we cached the result of a complete run in `data("iBART_real_data", package = "iBART")`, which can be replicated by using the above code. `iBART()` returns many interesting outputs. For example, `iBART_real_data$iBART_gen_size` and `iBART_real_data$iBART_sel_size` store dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction.
 
 ```{r size_plot, fig.width=7, fig.height=3.5}
 library(ggplot2)
-df_dim <- data.frame(dim = c(iBART_results$iBART_sel_size, iBART_results$iBART_gen_size),
+df_dim <- data.frame(dim = c(iBART_real_data$iBART_sel_size, iBART_real_data$iBART_gen_size),
                      iter = rep(0:3, 2),
                      type = rep(c("Selected", "Generated"), each = 4))
 ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
@@ -72,11 +77,11 @@ ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
   scale_x_continuous(breaks = c(0, 1, 2, 3))
 ```
 
-We can access the selected $k$-descriptor via `iBART_results$Lzero_names` and the corresponding regression model in `iBART_results$Lzero_models`. For instance, the selected 3-descriptor model is
+We can access the selected $k$-descriptor via `iBART_real_data$Lzero_names` and the corresponding regression model in `iBART_real_data$Lzero_models`. For instance, the selected 3-descriptor model is
 
 ```{r k-descriptor}
-iBART_results$Lzero_names[[3]]
-summary(iBART_results$Lzero_models[[3]])
+iBART_real_data$Lzero_names[[3]]
+summary(iBART_real_data$Lzero_models[[3]])
 ```
 
 ## OIS vs non-OIS
@@ -89,7 +94,7 @@ model_no_OIS <- k_var_model(X_train = X, y_train = y, k = 3, parallel = FALSE)
 
 #### Figure 7 ####
 library(ggpubr)
-model_OIS <- iBART_results$Lzero_model[[3]]
+model_OIS <- iBART_real_data$Lzero_model[[3]]
 
 # Prepare data for plotting
 data_OIS <- data.frame(y = y, y_hat = model_OIS$fitted.values)

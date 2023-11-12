@@ -20,5 +20,4 @@ BuildType: Package
 PackageUseDevtools: Yes
 PackageInstallArgs: --with-keep.source --no-multiarch
 PackageBuildBinaryArgs: --no-multiarch
-PackageCheckArgs: --no-multiarch
 PackageRoxygenize: rd,collate,namespace

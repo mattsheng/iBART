@@ -27,40 +27,75 @@ library(iBART)
 ## Complex Model
 In this vignette, we will run iBART on the complex model described in Section 3.4 of the paper, i.e. the data-generating model is
 $$y = 15\{\exp(x_1)-\exp(x_2)\}^2 + 20\sin(\pi x_3x_4) + \varepsilon, \qquad\varepsilon\sim \mathcal{N}_n(0, \sigma^2 I).$$
-The primary features are $X = (x_1,...,x_p)$, where $x_1,...,x_p \overset{\text{iid}}\sim\text{Unif}_n(-1,1)$. We will use the following setting: $n = 250$, $p = 10$, and $\sigma = 0.5$. The goal in OIS is to identify the 2 true descriptors: $f_1(X) = \{\exp(x_1)-\exp(x_2)\}^2$ and $f_2(X) = \sin(\pi x_3x_4)$ using only $(y, X)$ as input.
+The primary features are $X = (x_1,...,x_p)$, where $x_1,...,x_p \overset{\text{iid}}\sim\text{Unif}_n(-1,1)$. We will use the following setting: $n = 250$, $p = 10$, and $\sigma = 0.5$. The goal in OIS is to identify the 2 true descriptors: $f_1(X) = \{\exp(x_1)-\exp(x_2)\}^2$ and $f_2(X) = \sin(\pi x_3x_4)$ using only $(y, X)$ as input. Let's generate the primary features $X$ and the response variable $y$.
 ```{r iBART}
 #### Simulation Parameters ####
 n <- 250 # Change n to 100 here to reproduce result in Supplementary Materials A.2.3
 p <- 10  # Number of primary features
 
-
 #### Generate Data ####
 X <- matrix(runif(n * p, min = -1, max = 1), nrow = n, ncol = p)
 colnames(X) <- paste("x.", seq(from = 1, to = p, by = 1), sep = "")
 y <- 15 * (exp(X[, 1]) - exp(X[, 2]))^2 + 20 * sin(pi * X[, 3] * X[, 4]) + rnorm(n, mean = 0, sd = 0.5)
-
-
-#### iBART ####
-iBART_results <- iBART(X = X, y = y,
-                       head = colnames(X),
-                       opt = c("unary", "binary", "unary"), # unary operator first
-                       sin_cos = TRUE,
-                       apply_pos_opt_on_neg_x = FALSE,
-                       Lzero = TRUE,
-                       K = 4,
-                       aic = TRUE,
-                       standardize = FALSE,
-                       seed = 123)
 ```
-`iBART()` returns many interesting outputs. For example, `iBART_results$descriptor_names` returns the descriptors selected by iBART, and `iBART_results$iBART_model` returns the selected model---a `cv.glmnet` object. We can use the iBART model the same way we use a `glmnet` model. For instance, we can print out the coefficients using `coef()`.
+Note that the input data to iBART are only $y$ and $X = (x_1,...,x_{10})$, and iBART needs to
+
+1. Generate the correct descriptors $f_1(X)$ and $f_2(X)$
+2. Select the correct descriptors
+
+At Iteration 0 (base iteration), iBART determines which of the primary features, $(x_1,\ldots,x_{10})$, are useful and only apply operators on the useful ones. If successful, iBART should keep $(x_1,\ldots,x_4)$ in the loop and discard $(x_5,\ldots,x_{10})$. Let's run iBART for 1 iteration (Iteration 0 + Iteration 1) and examine its outputs.
+```{r iBART short}
+#### iBART ####
+iBART_sim <- iBART(X = X, y = y,
+                   head = colnames(X),
+                   opt = c("unary"), # only apply unary operators after base iteration
+                   sin_cos = TRUE,
+                   apply_pos_opt_on_neg_x = FALSE,
+                   Lzero = TRUE,
+                   K = 4,
+                   standardize = FALSE,
+                   seed = 123)
+```
+`iBART()` returns a list object that contains many interesting outputs; see `?iBART::iBART` for a full list of return values. Here we focus on 2 return values:
+
+* `iBART_sim$descriptor_names`: the descriptors selected by iBART
+* `iBART_sim$iBART_model`: the selected model---a `cv.glmnet` object
+
+We can use the iBART model the same way we would use a `glmnet` model. For instance, we can print out the coefficients using `coef()`.
+
 ```{r iBART result}
 # iBART selected descriptors
-iBART_results$descriptor_names
+iBART_sim$descriptor_names
 
 # iBART model
-class(iBART_results$iBART_model)
+coef(iBART_sim$iBART_model, s = "lambda.min")
+```
 
-coef(iBART_results$iBART_model, s = "lambda.min")
+`iBART_sim$descriptor_names` contains the name of the selected descriptors at the last iteration (Iteration 1) and `coef(iBART_sim$iBART_model, s = "lambda.min")` shows the input descriptors at the last iteration (Iteration 1) and their coefficients. Notice that the first 4 descriptors in `coef(iBART_sim$iBART_model, s = "lambda.min")` are $x_1,\ldots,x_4$. This indicates that iBART discarded $x_5,\ldots,x_{10}$ and kept $x_1,\ldots,x_4$ in the loop at Iteration 0. 
+
+At Iteration 1, iBART applied unary operators to $x_1,\ldots,x_4$, yielding 
+$$x_i, x_i^2, \exp(x_i), \sin(\pi x_i), \cos(\pi x_i), x_i^{-1}, |x_i|, \qquad\text{for } i = 1,2,3,4.$$
+Among them, iBART selected 2 active intermediate descriptors: $\exp(x_1)$ and $\exp(x_2)$, which are needed to generate $f_1(X) = \{\exp(x_1)-\exp(x_2)\}^2$. This is very promising. Note that we don't have $\sqrt{x_i}$ and $\log(x_i)$ here because $\sqrt{\cdot}$ and $\log(\cdot)$ are only defined if $x_i$'s are positive. We can overwrite this by setting `apply_pos_opt_on_neg_x = TRUE`; this effectively generates $\sqrt{|x_i|}$ and $\log(|x_i|)$. 
+
+To save time, we cached the result of a complete run in `data("iBART_sim", package = "iBART")`, which can be replicated by using the following code.
+
+```{r iBART full, eval=FALSE}
+iBART_sim <- iBART(X = X, y = y,
+                   head = colnames(X),
+                   opt = c("unary", "binary", "unary"), 
+                   sin_cos = TRUE,
+                   apply_pos_opt_on_neg_x = FALSE,
+                   Lzero = TRUE,
+                   K = 4,
+                   standardize = FALSE,
+                   seed = 123)
+```
+Let's load the full result and see how iBART did.
+```{r load result}
+load("../data/iBART_sim.rda")                 # load full result
+
+iBART_sim$descriptor_names                    # iBART selected descriptors
+coef(iBART_sim$iBART_model, s = "lambda.min") # iBART model
 ```
 Here iBART generated 145 descriptors in the last iteration, and it correctly identified the true descriptors $f_1(X)$ and $f_2(X)$ without selecting any false positive. This is very reassuring especially when some of these descriptors are highly correlated with $f_1(X)$ or $f_2(X)$. For instance, $\tilde{f}_1(X) = |\exp(x_1) - \exp(x_2)|$ in the descriptor space is highly correlated with $f_1(X)$. 
 
@@ -69,11 +104,11 @@ f1_true <- (exp(X[,1]) - exp(X[,2]))^2
 f1_cor <- abs(exp(X[,1]) - exp(X[,2]))
 cor(f1_true, f1_cor)
 ```
-`iBART()` also returns other useful and interesting outputs, such as `iBART_results$iBART_gen_size` and `iBART_results$iBART_sel_size`. They store the dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction. In each iteration, we keep the dimension of intermediate descriptor space under $\mathcal{O}(p^2)$, leading to a progressive dimension reduction.
+`iBART()` also returns other useful and interesting outputs, such as `iBART_sim$iBART_gen_size` and `iBART_sim$iBART_sel_size`. They store the dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction. In each iteration, we keep the dimension of intermediate descriptor space under $\mathcal{O}(p^2)$, leading to a progressive dimension reduction.
 
 ```{r size_plot, fig.width=7, fig.height=3.5}
 library(ggplot2)
-df_dim <- data.frame(dim = c(iBART_results$iBART_sel_size, iBART_results$iBART_gen_size),
+df_dim <- data.frame(dim = c(iBART_sim$iBART_sel_size, iBART_sim$iBART_gen_size),
                      iter = rep(0:3, 2),
                      type = rep(c("Selected", "Generated"), each = 4))
 ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
@@ -85,6 +120,7 @@ ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
   labs(x = "Iteration", y = "Number of descriptors") +
   scale_x_continuous(breaks = c(0, 1, 2, 3))
 ```
+
 ## R Session Info
 ```{r sessioninfo}
 sessionInfo()
