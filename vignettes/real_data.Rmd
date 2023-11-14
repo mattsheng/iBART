@@ -32,7 +32,6 @@ library(iBART)
 Next, we load the real data set and examine what data are needed to run iBART.
 ```{r load data}
 load("../data/catalysis.rda")    # load data
-list2env(catalysis, globalenv()) # extract elements of catalysis to global environment
 summary(catalysis)
 ```
 The data set consists of 4 objects:
@@ -45,9 +44,9 @@ The data set consists of 4 objects:
 ## iBART
 Now let's apply iBART to this data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we specify `opt = c("binary", "unary", "binary")`, meaning there will be 3 iterations and we want to alternate between binary and unary operators, starting with binary operators $\mathcal{O}_b$. We can also use all operators $O$ in an iteration. For example, `opt = c("all", "all")` will apply all operators $O$ for 2 iterations. 
 ```{r iBART, eval=FALSE}
-iBART_real_data <- iBART(X = X, y = y,
-                         head = head,  # colnames of X
-                         unit = unit,  # units of X
+iBART_real_data <- iBART(X = catalysis$X, y = catalysis$y,
+                         head = catalysis$head,  # colnames of X
+                         unit = catalysis$unit,  # units of X
                          opt = c("binary", "unary", "binary"), # binary operator first
                          out_sample = FALSE,
                          Lzero = TRUE,
@@ -90,17 +89,17 @@ The OIS model differs from the non-OIS model in that the former builds on nonlin
 ```{r OIS vs non-OIS, fig.width=7, fig.height=3.5}
 # Train a non-OIS model with 3 predictors
 set.seed(123)
-model_no_OIS <- k_var_model(X_train = X, y_train = y, k = 3, parallel = FALSE)
+model_no_OIS <- k_var_model(X_train = catalysis$X, y_train = catalysis$y, k = 3, parallel = FALSE)
 
 #### Figure 7 ####
 library(ggpubr)
 model_OIS <- iBART_real_data$Lzero_model[[3]]
 
 # Prepare data for plotting
-data_OIS <- data.frame(y = y, y_hat = model_OIS$fitted.values)
-data_no_OIS <- data.frame(y = y, y_hat = model_no_OIS$models$fitted.values)
+data_OIS <- data.frame(y = catalysis$y, y_hat = model_OIS$fitted.values)
+data_no_OIS <- data.frame(y = catalysis$y, y_hat = model_no_OIS$models$fitted.values)
 
-p1 <- ggplot(data_OIS, aes(x = y_hat, y = y)) +
+p1 <- ggplot(data_OIS, aes(x = y_hat, y = catalysis$y)) +
   geom_point() +
   geom_abline() +
   xlim(c(min(data_OIS$y_hat, data_OIS$y) - 0.2, max(data_OIS$y_hat, data_OIS$y) + 0.2)) +
@@ -109,7 +108,7 @@ p1 <- ggplot(data_OIS, aes(x = y_hat, y = y)) +
   ylab("") +
   annotate("text", x = -12, y = -3, parse = TRUE,
            label = paste("R^{2} ==", round(summary(model_OIS)$r.squared, 4)))
-p2 <- ggplot(data_no_OIS, aes(x = y_hat, y = y)) +
+p2 <- ggplot(data_no_OIS, aes(x = y_hat, y = catalysis$y)) +
   geom_point() +
   geom_abline() +
   xlim(c(min(data_no_OIS$y_hat, data_no_OIS$y) - 0.2, max(data_no_OIS$y_hat, data_no_OIS$y) + 0.2)) +

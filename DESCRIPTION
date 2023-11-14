@@ -1,11 +1,13 @@
 Package: iBART
-Title: Iterative BART Descriptor Selection Method
+Title: Iterative Bayesian Additive Regression Trees Descriptor Selection Method
 Version: 1.0.0
 Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre", "cph"), email = "sy53@rice.edu", comment = c(ORCID = "0000-0001-8767-2595")),
              person("Meng", "Li", role = "aut", email = "meng@rice.edu"))
 Maintainer: Shengbin Ye <sy53@rice.edu>
-Description: A statistical method based on BART-G.SE for descriptor selection and symbolic regression. 
-    It finds the symbolic formula of the regression function y=f(x).
+Description: A statistical method based on Bayesian Additive Regression Trees with Global 
+    Standard Error Permutation Test (BART-G.SE) for descriptor selection 
+    and symbolic regression. It finds the symbolic formula of the regression function 
+    y=f(x) as described in Ye, Senftle, and Li (2023) <arXiv:2110.10195>.
 URL: https://github.com/mattsheng/iBART
 BugReports: https://github.com/mattsheng/iBART/issues
 License: GPL (>= 3)

@@ -35,6 +35,7 @@ iBART(
   aic = FALSE,
   standardize = TRUE,
   writeLog = FALSE,
+  verbose = TRUE,
   count = NULL,
   seed = NULL
 )
@@ -98,7 +99,9 @@ iBART(
 
 \item{standardize}{Logical flag for data standardization prior to model fitting in BART and LASSO. Default is \code{standardize = TRUE}.}
 
-\item{writeLog}{Logical flag for writing log file. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.}
+\item{writeLog}{Logical flag for writing log file to working directory. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.}
+
+\item{verbose}{Logical flag for printing progress to console. Default is \code{verbose = TRUE}.}
 
 \item{count}{Internal parameter. Default is \code{count = NULL}.}
 
@@ -127,39 +130,11 @@ A list of iBART output.
 \item{runtime}{Runtime in second.}
 }
 \description{
-iBART descriptor selection
-}
-\examples{
-set.seed(123)
-options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
-library(iBART)
-n <- 250
-p <- 10
-
-X <- matrix(runif(n * p, min = -1, max = 1), nrow = n, ncol = p)
-colnames(X) <- paste("x.", seq(from = 1, to = p, by = 1), sep = "")
-y <- 15*(exp(X[,1])-exp(X[,2]))^2 + 20*sin(pi*X[,3]*X[,4])
-       + rnorm(n, mean = 0, sd = 0.5)
-\dontrun{
-iBART_results <- iBART(X = X, y = y,
-                       head = colnames(X),
-                       unit = NULL,
-                       opt = c("unary", "binary", "unary"), # unary operator first
-                       sin_cos = TRUE,
-                       apply_pos_opt_on_neg_x = FALSE,
-                       Lzero = TRUE,
-                       K = 4,
-                       aic = TRUE,
-                       standardize = FALSE,
-                       seed = 99)
-# Correct descriptor names are (exp(x.1)-exp(x.2))^2 and sin(pi*x.3*x.4)
-iBART_results$descriptor_names
-}
+Finds a symbolic formula for the regression function \eqn{y=f(X)} using \eqn{(y,X)} as inputs.
 }
 \references{
-Shengbin Ye, Meng Li (2021). Operator-induced structural variable selection with applications to materials genomes.
-Submitted
+Ye, S., Senftle, T.P., and Li, M. (2023) \emph{Operator-induced structural variable selection for identifying materials genes}, \url{https://arxiv.org/abs/2110.10195}.
 }
 \author{
-Shengbin Ye and Meng Li
+Shengbin Ye
 }

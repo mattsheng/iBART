@@ -3,6 +3,9 @@
 #' @importFrom utils combn
 #' @title iBART descriptor selection
 #'
+#' @description
+#' Finds a symbolic formula for the regression function \eqn{y=f(X)} using \eqn{(y,X)} as inputs.
+#'
 #' @param X Input matrix of primary features \eqn{X}.
 #' @param y Response variable \eqn{y}.
 #' @param head Optional: name of primary features.
@@ -32,7 +35,8 @@
 #' @param K If \code{Lzero == TRUE}, \code{K} sets the maximum number of descriptors to be selected.
 #' @param aic If \code{Lzero == TRUE}, logical flag for selecting best number of descriptors using AIC. Possible number of descriptors are \eqn{1 \le k \le K}.
 #' @param standardize Logical flag for data standardization prior to model fitting in BART and LASSO. Default is \code{standardize = TRUE}.
-#' @param writeLog Logical flag for writing log file. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.
+#' @param writeLog Logical flag for writing log file to working directory. The log file will contain information such as the descriptors selected by iBART, RMSE of the linear model build on the selected descriptors, etc. Default is \code{writeLog = FALSE}.
+#' @param verbose Logical flag for printing progress to console. Default is \code{verbose = TRUE}.
 #' @param count Internal parameter. Default is \code{count = NULL}.
 #' @param seed Optional: sets the seed in both R and Java. Default is \code{seed = NULL} which does not set the seed in R nor Java.
 #' @return A list of iBART output.
@@ -57,38 +61,10 @@
 #' \item{runtime}{Runtime in second.}
 #'
 #' @author
-#' Shengbin Ye and Meng Li
+#' Shengbin Ye
 #'
 #' @references
-#' Shengbin Ye, Meng Li (2021). Operator-induced structural variable selection with applications to materials genomes.
-#' Submitted
-#'
-#' @examples
-#' set.seed(123)
-#' options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
-#' library(iBART)
-#' n <- 250
-#' p <- 10
-#'
-#' X <- matrix(runif(n * p, min = -1, max = 1), nrow = n, ncol = p)
-#' colnames(X) <- paste("x.", seq(from = 1, to = p, by = 1), sep = "")
-#' y <- 15*(exp(X[,1])-exp(X[,2]))^2 + 20*sin(pi*X[,3]*X[,4])
-#'        + rnorm(n, mean = 0, sd = 0.5)
-#' \dontrun{
-#' iBART_results <- iBART(X = X, y = y,
-#'                        head = colnames(X),
-#'                        unit = NULL,
-#'                        opt = c("unary", "binary", "unary"), # unary operator first
-#'                        sin_cos = TRUE,
-#'                        apply_pos_opt_on_neg_x = FALSE,
-#'                        Lzero = TRUE,
-#'                        K = 4,
-#'                        aic = TRUE,
-#'                        standardize = FALSE,
-#'                        seed = 99)
-#' # Correct descriptor names are (exp(x.1)-exp(x.2))^2 and sin(pi*x.3*x.4)
-#' iBART_results$descriptor_names
-#' }
+#' Ye, S., Senftle, T.P., and Li, M. (2023) \emph{Operator-induced structural variable selection for identifying materials genes}, \url{https://arxiv.org/abs/2110.10195}.
 
 
 iBART <- function(X = NULL, y = NULL,
@@ -120,6 +96,7 @@ iBART <- function(X = NULL, y = NULL,
                   aic = FALSE,
                   standardize = TRUE,
                   writeLog = FALSE,
+                  verbose = TRUE,
                   count = NULL,
                   seed = NULL) {
 
@@ -221,7 +198,7 @@ iBART <- function(X = NULL, y = NULL,
   }
 
   #### iBART descriptor generation and selection ####
-  cat("Start iBART descriptor generation and selection... \n")
+  if (verbose) cat("Start iBART descriptor generation and selection... \n")
   dat <- list(y = y, X = X, head = head, unit = unit,
               X_selected = NULL, head_selected = NULL, dimen_selected = NULL,
               # pos_idx_old = NULL, pos_idx_new = NULL,
@@ -237,16 +214,16 @@ iBART <- function(X = NULL, y = NULL,
   }
 
   for (i in 1:iter) {
-    cat(paste("Iteration", i, "\n", sep = " "))
+    if (verbose) cat(paste("Iteration", i, "\n", sep = " "))
     #### Hold operation ####
     if ((hold > 0) & (i <= hold)) {
-      dat <- descriptorGenerator(dat, opt[i], sin_cos, apply_pos_opt_on_neg_x)
+      dat <- descriptorGenerator(dat, opt[i], sin_cos, apply_pos_opt_on_neg_x, verbose)
       dat$iBART_gen_size <- c(dat$iBART_gen_size, ncol(dat$X))
       dat$iBART_sel_size <- c(dat$iBART_sel_size, NA)
-      cat("Skipping iBART descriptor selection... \n")
+      if (verbose) cat("Skipping iBART descriptor selection... \n")
       next
     }
-    cat("iBART descriptor selection... \n")
+    if (verbose) cat("iBART descriptor selection... \n")
 
     ### BART-G.SE ###
     dat <- BART_iter(data = dat,
@@ -267,15 +244,17 @@ iBART <- function(X = NULL, y = NULL,
     }
 
     ### Feature engineering via operations ###
-    dat <- descriptorGenerator(dat, opt[i], sin_cos, apply_pos_opt_on_neg_x)
+    dat <- descriptorGenerator(dat, opt[i], sin_cos, apply_pos_opt_on_neg_x, verbose)
     dat$iBART_gen_size <- c(dat$iBART_gen_size, ncol(dat$X))
     if (dat$error) break
   }
 
-  cat("BART iteration done! \n")
+  if (verbose) {
+    cat("BART iteration done! \n")
+    cat("LASSO descriptor selection... \n")
+  }
 
   #### LASSO variable selection ####
-  cat("LASSO descriptor selection... \n")
   dat <- LASSO(data = dat,
                train_idx = train_idx,
                type.measure = type.measure,
@@ -287,12 +266,12 @@ iBART <- function(X = NULL, y = NULL,
   #### L-zero regression ####
   if (Lzero) {
     dat <- L_zero(data = dat, train_idx = train_idx, standardize = standardize,
-                  K = K, parallel = parallel, aic = aic)
+                  K = K, parallel = parallel, aic = aic, verbose = verbose)
   }
 
   end_time <- Sys.time()
   dat$runtime <- as.numeric(end_time - start_time, units = "secs")
-  cat(paste("Total time:", dat$runtime, "secs \n", sep = " "))
+  if (verbose) cat(paste("Total time:", dat$runtime, "secs \n", sep = " "))
 
   #### Generate output log to a .txt file ####
   if (writeLog) writeLogFunc(data = dat,

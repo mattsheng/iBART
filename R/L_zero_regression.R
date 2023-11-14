@@ -1,6 +1,6 @@
 #' @import foreach
 
-L_zero <- function(data = NULL, train_idx = NULL, standardize = TRUE, K = 5, parallel = FALSE, aic = FALSE) {
+L_zero <- function(data = NULL, train_idx = NULL, standardize = TRUE, K = 5, parallel = FALSE, aic = FALSE, verbose = TRUE) {
   data$X <- as.matrix(data$X)
   dat <- trainingSplit(X = data$X, y = data$y, train_idx = train_idx)
   dat <- scaleData(data = dat, standardize = standardize)
@@ -10,7 +10,7 @@ L_zero <- function(data = NULL, train_idx = NULL, standardize = TRUE, K = 5, par
   data$Lzero_in_sample_RMSE <- data$Lzero_out_sample_RMSE <- c()
   if (aic) aic_val <- c()
 
-  cat("L-zero regression... \n")
+  if (verbose) cat("L-zero regression... \n")
   for (k in 1:K) {
     k_model <- k_var_model(dat$X_train, dat$y_train, dat$X_test, dat$y_test, k, parallel = parallel)
     data$Lzero_models[[k]] <- k_model$model
