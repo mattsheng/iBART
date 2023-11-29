@@ -4,7 +4,7 @@
 
 # iBART
 
-This is a R-Java implementation of iBART found in Ye, Senftle, & Li [Operator-induced structural variable selection for identifying materials genes](https://arxiv.org/abs/2110.10195). This R package largely depends on the R package [`bartMachine`](https://github.com/kapelner/bartMachine) for its BART-G.SE variable selection implementation.
+This is a R-Java implementation of iBART found in Ye, Senftle, & Li [Operator-induced structural variable selection for identifying materials genes](https://arxiv.org/abs/2110.10195). This R package depends on the R package [`bartMachine`](https://github.com/kapelner/bartMachine) for its BART-G.SE variable selection implementation.
 
 ## Installation
 
@@ -27,9 +27,13 @@ Run `install.packages("bartMachine", INSTALL_opts = "--no-multiarch")` within R.
 
 Run `install.packages("glmnet")` within R. To reproduce results in the paper, please install `glmnet 4.1-1`.
 
+## Install iBART via CRAN
+
+Run `install.packages("iBART")` within R.
+
 ### Install iBART via devtools
 
-Run `devtools::install_github("mattsheng/iBART", INSTALL_opts = "--no-multriarch")` within R or run `devtools::install_github("mattsheng/iBART", INSTALL_opts = "--no-multriarch", build_vignettes = TRUE)` if you want to build the vignettes; this will take a while.
+Run `devtools::install_github("mattsheng/iBART", INSTALL_opts = "--no-multriarch", build_vignettes = TRUE)` within R.
 
 
 ## Example
