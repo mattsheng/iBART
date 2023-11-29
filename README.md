@@ -27,7 +27,7 @@ Run `install.packages("bartMachine", INSTALL_opts = "--no-multiarch")` within R.
 
 Run `install.packages("glmnet")` within R. To reproduce results in the paper, please install `glmnet 4.1-1`.
 
-## Install iBART via CRAN
+### Install iBART via CRAN
 
 Run `install.packages("iBART")` within R.
 
