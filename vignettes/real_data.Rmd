@@ -16,13 +16,13 @@ knitr::opts_chunk$set(
 ```
 
 ## Data Description{#data}
-The single-atom catalysis data is stored in `data/single_atom_catalysis.RData`, and the raw data is available at [this Github repo](https://github.com/tsenftle/Metal-Oxide-LASSO-lo). Here we model the metal/oxide binding energy (the response variable $y$) using $p=59$ physical properties of the transition metals and the oxide supports (the primary features $X$). The response variable $y$ and the primary features $X$ are treated as continuous variables, and we aim to use **iBART** to find an interpretable model with high predictive performance for the metal/oxide binding energy.
+The single-atom catalysis data is stored in `data/single_atom_catalysis.RData`, and the raw data is available at [this GitHub repo](https://github.com/tsenftle/Metal-Oxide-LASSO-lo). Here we model the metal/oxide binding energy (the response variable $y$) using $p=59$ physical properties of the transition metals and the oxide supports (the primary features $X$). The response variable $y$ and the primary features $X$ are treated as continuous variables, and we aim to use **iBART** to find an interpretable model with high predictive performance for the metal/oxide binding energy.
 
-A total of 13 transition metals ($\text{Cu, Ag, Au, Ni, Pd, Pt,}$ $\text{Co, Rh, Ir, Fe, Ru, Mn, V}$) and 7 oxide supports ($\text{CeO}_2(111)$, $\text{MgO}(100)$, $\text{CeO}_2(110)$, $\text{TbO}_2(111)$, $\text{ZnO}(100)$, $\text{TiO}_2(011)$, $\alpha\text{-Al}_2\text{O}_3(0001)$) were studied in the dataset, making a total of $n = 13 \times 7 = 91$ metal/oxide pairs. The primary feature matrix $X$ contains various physical properties of the transition metals and the oxide supports including Pauling Electronegativity ($\chi_P$), $(n-1)^{\text{th}}$ and $n^{\text{th}}$ Ionization Energies ($\text{IE}_{n-1}$, $\text{IE}_n$), Electron Affinity ($\text{EA}$), $\text{HOMO}$ Energy, $\text{LUMO}$ Energy, Heat of Sublimation ($\Delta H_{\text{sub}}$), Oxidation Energy of oxide support ($\Delta H_{\text{f,ox,bulk}}$), Oxide Formation Enthalpy ($\Delta H_{\text{f,ox}}$), Zunger Orbital Radius ($r$), Atomic Number ($Z$), Meidema Parameters of metal atoms $(\eta^{1/3}, \varphi)$, Valance Electron ($\text{N}_{\text{val}}$), Oxygen Vacancy Energy of oxide support ($\Delta\text{E}_{\text{vac}}$), Workfunction of oxide support $(\text{WF})$, Surface Energy ($\gamma$), Coordination Number ($\text{CN}$), and Bond Valence of surface metal atom ($\text{BV}$). Most of these physical properties are defined for both the transition metals and the oxide supports while a few of them are only defined for either the transition metals or the oxide supports. A detailed description of the 59 primary features $X$ can be find in pages 11--14 of [the data supplementary materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41929-018-0094-5/MediaObjects/41929_2018_94_MOESM1_ESM.pdf) published by O'Connor et al.
+A total of 13 transition metals ($\text{Cu, Ag, Au, Ni, Pd, Pt,}$ $\text{Co, Rh, Ir, Fe, Ru, Mn, V}$) and 7 oxide supports ($\text{CeO}_2(111)$, $\text{MgO}(100)$, $\text{CeO}_2(110)$, $\text{TbO}_2(111)$, $\text{ZnO}(100)$, $\text{TiO}_2(011)$, $\alpha\text{-Al}_2\text{O}_3(0001)$) were studied in the dataset, making a total of $n = 13 \times 7 = 91$ metal/oxide pairs. The primary feature matrix $X$ contains various physical properties of the transition metals and the oxide supports including Pauling Electronegativity ($\chi_P$), $(n-1)^{\text{th}}$ and $n^{\text{th}}$ Ionization Energies ($\text{IE}_{n-1}$, $\text{IE}_n$), Electron Affinity ($\text{EA}$), $\text{HOMO}$ Energy, $\text{LUMO}$ Energy, Heat of Sublimation ($\Delta H_{\text{sub}}$), Oxidation Energy of oxide support ($\Delta H_{\text{f,ox,bulk}}$), Oxide Formation Enthalpy ($\Delta H_{\text{f,ox}}$), Zunger Orbital Radius ($r$), Atomic Number ($Z$), Meidema Parameters of metal atoms $(\eta^{1/3}, \varphi)$, Valance Electron ($\text{N}_{\text{val}}$), Oxygen Vacancy Energy of oxide support ($\Delta\text{E}_{\text{vac}}$), Workfunction of oxide support $(\text{WF})$, Surface Energy ($\gamma$), Coordination Number ($\text{CN}$), and Bond Valence of surface metal atom ($\text{BV}$). Most of these physical properties are defined for both the transition metals and the oxide supports, while a few are only defined for the transition metals or the oxide supports. A detailed description of the 59 primary features $X$ can be found on pages 11--14 of [the data supplementary materials](https://static-content.springer.com/esm/art%3A10.1038%2Fs41929-018-0094-5/MediaObjects/41929_2018_94_MOESM1_ESM.pdf) published by O'Connor et al.
 
 
 ## Package and Data Loading
-Before loading the **iBART** package, we must allocate enough memory for Java to avoid out of memory errors.
+Before loading the **iBART** package, we must allocate enough memory to Java to avoid out-of-memory errors.
 
 ```{r load package}
 # Allocate 10GB of memory for Java. Must be called before library(iBART)
@@ -42,7 +42,16 @@ The data set consists of 4 objects:
 + `unit`: a (optional) `list` of named numeric vectors. This stores the unit information of the primary features `X`. This can be generated using the helper function `generate_unit(unit, dimension)`. See `?iBART::generate_unit` for more detail.
 
 ## iBART
-Now let's apply iBART to this data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we specify `opt = c("binary", "unary", "binary")`, meaning there will be 3 iterations and we want to alternate between binary and unary operators, starting with binary operators $\mathcal{O}_b$. We can also use all operators $O$ in an iteration. For example, `opt = c("all", "all")` will apply all operators $O$ for 2 iterations. 
+Now let's apply iBART to the data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we set `opt = c("binary", "unary", "binary")`, the descriptor generating strategy described in (8) of [our paper](https://arxiv.org/abs/2110.10195). That is, we let iBART run for 3 descriptor generating iterations, where binary operators $\mathcal{O}_b$ are used in the 1st iteration, unary operators $\mathcal{O}_u$ in the 2nd iteration, and binary operators $\mathcal{O}_b$ in the 3rd iteration. 
+
+We can also define other descriptor generating strategies. The available operator sets at each iteration are 
+
++ `all`: all operators $\mathcal{O} = \{+, -, \times, /, |-|, I, \exp, \log, |\cdot|, \sqrt{}, ^{-1}, ^2, \sin(\pi\cdot), \cos(\pi\cdot)\}$
++ `binary`: binary operators $\mathcal{O}_b = \{+, -, \times, /, |-|\}$
++ `unary`: unary operators $\mathcal{O}_u = \{I, \exp, \log, |\cdot|, \sqrt{}, ^{-1}, ^2, \sin(\pi\cdot), \cos(\pi\cdot)\}$
+
+For example, `opt = c("all", "all")` will apply all operators $\mathcal{O}$ for 2 iterations. Here we use the same tuning parameters discussed in Section 3.4 of [our paper](https://arxiv.org/abs/2110.10195).
+
 ```{r iBART, eval=FALSE}
 iBART_real_data <- iBART(X = catalysis$X, y = catalysis$y,
                          head = catalysis$head,  # colnames of X
@@ -50,7 +59,7 @@ iBART_real_data <- iBART(X = catalysis$X, y = catalysis$y,
                          opt = c("binary", "unary", "binary"), # binary operator first
                          out_sample = FALSE,
                          Lzero = TRUE,
-                         K = 5, # maximum descriptors in l-zero model
+                         K = 5, # maximum number of descriptors in l-zero model
                          standardize = FALSE,
                          seed = 888)
 ```
@@ -59,7 +68,10 @@ iBART_real_data <- iBART(X = catalysis$X, y = catalysis$y,
 load("../data/iBART_real_data.rda")             # load full result
 ```
 
-To save time, we cached the result of a complete run in `data("iBART_real_data", package = "iBART")`, which can be replicated by using the above code. `iBART()` returns many interesting outputs. For example, `iBART_real_data$iBART_gen_size` and `iBART_real_data$iBART_sel_size` store dimension of the newly generated / selected descriptor space for each iteration. Let's plot them and see how **iBART** use nonparametric variable selection for dimension reduction.
+To save time, we cached the result of a complete run in `data("iBART_real_data", package = "iBART")`.
+
+### Dimension Reduction
+`iBART()` returns many interesting outputs. For example, `iBART_real_data$iBART_gen_size` and `iBART_real_data$iBART_sel_size` return the dimensions of the generated and selected descriptor space for each iteration, respectively. Let's plot them and see how iBART uses nonparametric variable selection to achieve effective dimension reduction.
 
 ```{r size_plot, fig.width=7, fig.height=3.5}
 library(ggplot2)
@@ -68,15 +80,32 @@ df_dim <- data.frame(dim = c(iBART_real_data$iBART_sel_size, iBART_real_data$iBA
                      type = rep(c("Selected", "Generated"), each = 4))
 ggplot(df_dim, aes(x = iter, y = dim, colour = type, group = type)) +
   theme(text = element_text(size = 15), legend.title = element_blank()) +
-  geom_line(size = 1) +
+  geom_line(linewidth = 1) +
   geom_point(size = 3, shape = 21, fill = "white") +
   geom_text(data = df_dim, aes(label = dim, y = dim + 40, group = type),
             position = position_dodge(0), size = 5, colour = "blue") +
   labs(x = "Iteration", y = "Number of descriptors") +
   scale_x_continuous(breaks = c(0, 1, 2, 3))
 ```
+Due to the iterative nonparametric screening framework of iBART, the dimension of the selected space is significantly smaller than that of the generated space at each iteration. This ensures that only a sparse subset of the intermediate descriptors is used to generate the consecutive descriptor space, and thus achieving a progressive dimension reduction.
 
-We can access the selected $k$-descriptor via `iBART_real_data$Lzero_names` and the corresponding regression model in `iBART_real_data$Lzero_models`. For instance, the selected 3-descriptor model is
+
+### iBART model
+The full selected model is stored in `iBART_real_data$iBART_model`, which is a `cv.glmnet` object since LASSO is used the last iteration. This means that we can use all of the `glmnet` functionality. For instance, we can obtain the model coefficients at $\lambda=$`lambda.min` using 
+```{r glmnet coef, eval=FALSE}
+coef(iBART_real_data$iBART_model, s = iBART_real_data$iBART_model$lambda.min)
+```
+
+To view the selected descriptors only, we can do the following instead
+```{r iBART descriptors}
+iBART_real_data$descriptor_names   # Symbolic syntax of the selected descriptors
+
+iBART_real_data$coefficients       # Coefficients of the selected descriptors
+```
+
+
+### iBART+$\ell_0$
+If `Lzero = TRUE`, iBART$+\ell_0$ will be run and `K` controls the maximum number of descriptors in a model. Here we set `K=5` so iBART$+\ell_0$ will return 5 models: the best 1-descriptor model, 2-descriptor model, and so on. We can access the best $k$-descriptor via `iBART_real_data$Lzero_names`, and their corresponding regression models using `iBART_real_data$Lzero_models`. For instance, the best 3-descriptor model is
 
 ```{r k-descriptor}
 iBART_real_data$Lzero_names[[3]]
@@ -84,7 +113,7 @@ summary(iBART_real_data$Lzero_models[[3]])
 ```
 
 ## OIS vs non-OIS
-The OIS model differs from the non-OIS model in that the former builds on nonlinear descriptors (composition of $\mathcal{O}$ on $X$) while the latter builds on the primary features $X$. The OIS model has many advantages. In particular, it reveals interpretable nonlinear relationship between $y$ and $X$, and improves prediction accuracy over a simple linear regression model (or non-OIS model). We showcase the improved accuracy over non-OIS model using Figure 7 in the paper.
+The OIS model differs from the non-OIS model in that the former builds on nonlinear descriptors (composition of $\mathcal{O}$ on $X$) while the latter builds on the primary features $X$. The OIS model has many advantages. In particular, it reveals an interpretable nonlinear relationship between $y$ and $X$, and improves prediction accuracy over a simple linear regression model (or non-OIS model). Here we showcase the improved accuracy over the non-OIS model using Figure 7 in the paper.
 
 ```{r OIS vs non-OIS, fig.width=7, fig.height=3.5}
 # Train a non-OIS model with 3 predictors
