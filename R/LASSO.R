@@ -51,7 +51,7 @@ LASSO <- function(data = NULL, train_idx = NULL, type.measure = "deviance",
 
     data$X_selected <- as.matrix(data$X)
     data$head_selected <- data$head
-    if (!is.null(data$unit)) data$dimen_selected <- data$unit
+    if (!is.null(data$unit)) data$unit_selected <- data$unit
     colnames(data$X_selected) <- colnames(data$X) <- data$head_selected # new
     data$iBART_sel_size <- c(data$iBART_sel_size, ncol(data$X_selected))
     data$descriptor_names <- data$head_selected
@@ -59,7 +59,7 @@ LASSO <- function(data = NULL, train_idx = NULL, type.measure = "deviance",
   } else {
     data$X_selected <- data$X <- as.matrix(data$X[, pos_idx]) # in case length(pos_idx) == 1
     data$head_selected <- data$head <- data$head[pos_idx]
-    if (!is.null(data$unit)) data$dimen_selected <- data$unit <- data$unit[pos_idx]
+    if (!is.null(data$unit)) data$unit_selected <- data$unit <- data$unit[pos_idx]
     colnames(data$X_selected) <- colnames(data$X) <- data$head_selected # new
     data$iBART_sel_size <- c(data$iBART_sel_size, length(pos_idx))
 

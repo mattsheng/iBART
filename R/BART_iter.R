@@ -51,10 +51,10 @@ BART_iter <- function(data = NULL,
     # pos_idx <- NULL
     data$X <- data$X_selected # The running X has to be restored to the last selected pool
     data$head <- data$head_selected
-    if (!is.null(data$unit)) data$unit <- data$dimen_selected
+    if (!is.null(data$unit)) data$unit <- data$unit_selected
 
     data$no_sel_count <- data$no_sel_count + 1
-    data$X_selected <- data$head_selected <- data$dimen_selected <- NULL
+    data$X_selected <- data$head_selected <- data$unit_selected <- NULL
     data$iBART_sel_size <- c(data$iBART_sel_size, NA)
     return(data) # early stop
   }
@@ -63,14 +63,14 @@ BART_iter <- function(data = NULL,
   # Union new selections with previous selections
   data$X_selected <- cbind(data$X_selected, data$X[, pos_idx])
   data$head_selected <- c(data$head_selected, data$head[pos_idx])
-  if (!is.null(data$unit)) data$dimen_selected <- c(data$dimen_selected, data$unit[pos_idx])
+  if (!is.null(data$unit)) data$unit_selected <- c(data$unit_selected, data$unit[pos_idx])
 
   # Remove duplicated data
   temp <- round(data$X_selected, digits = 6)
   dup_index <- duplicated(temp, MARGIN = 2)
   data$X <- data$X_selected <- as.matrix(data$X_selected[, !dup_index])
   data$head <- data$head_selected <- data$head_selected[!dup_index]
-  if (!is.null(data$unit)) data$unit <- data$dimen_selected <- data$dimen_selected[!dup_index]
+  if (!is.null(data$unit)) data$unit <- data$unit_selected <- data$unit_selected[!dup_index]
 
   # Attach colnames in case ncol(data$X_selected) == 1
   colnames(data$X_selected) <- colnames(data$X) <- data$head

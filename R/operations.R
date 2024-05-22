@@ -30,7 +30,7 @@ dataprocessing <- function(data) {
 ADD <- function(dat) {
   X <- dat$X
   head_in <- dat$head
-  dimen_in <- dat$unit
+  unit_in <- dat$unit
 
   n <- nrow(X)
   p <- ncol(X)
@@ -39,7 +39,7 @@ ADD <- function(dat) {
   unit <- list()
   count <- 1
 
-  if (is.null(dimen_in)) {
+  if (is.null(unit_in)) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] + X[, j]
@@ -51,14 +51,14 @@ ADD <- function(dat) {
   } else {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
-        dimen_i <- dimen_in[[i]]
-        dimen_j <- dimen_in[[j]]
-        dimen_i <- dimen_i[order(names(dimen_i))]
-        dimen_j <- dimen_j[order(names(dimen_j))]
-        if (setequal(names(dimen_i), names(dimen_j)) && isTRUE(dimen_i == dimen_j)) {
+        unit_i <- unit_in[[i]]
+        unit_j <- unit_in[[j]]
+        unit_i <- unit_i[order(names(unit_i))]
+        unit_j <- unit_j[order(names(unit_j))]
+        if (setequal(names(unit_i), names(unit_j)) && isTRUE(unit_i == unit_j)) {
           X_tmp[, count] <- X[, i] + X[, j]
           head[count] <- paste0("(", head_in[i], "+", head_in[j], ")")
-          unit[[count]] <- dimen_i
+          unit[[count]] <- unit_i
         } else {
           head[count] <- "empty"
           unit[[count]] <- "empty"
@@ -83,7 +83,7 @@ ADD <- function(dat) {
 MINUS <- function(dat) {
   X <- dat$X
   head_in <- dat$head
-  dimen_in <- dat$unit
+  unit_in <- dat$unit
 
   n <- nrow(X)
   p <- ncol(X)
@@ -92,7 +92,7 @@ MINUS <- function(dat) {
   unit <- list()
   count <- 1
 
-  if (is.null(dimen_in)) {
+  if (is.null(unit_in)) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] - X[, j]
@@ -104,14 +104,14 @@ MINUS <- function(dat) {
   } else {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
-        dimen_i <- dimen_in[[i]]
-        dimen_j <- dimen_in[[j]]
-        dimen_i <- dimen_i[order(names(dimen_i))]
-        dimen_j <- dimen_j[order(names(dimen_j))]
-        if (setequal(names(dimen_i), names(dimen_j)) && isTRUE(dimen_i == dimen_j)) {
+        unit_i <- unit_in[[i]]
+        unit_j <- unit_in[[j]]
+        unit_i <- unit_i[order(names(unit_i))]
+        unit_j <- unit_j[order(names(unit_j))]
+        if (setequal(names(unit_i), names(unit_j)) && isTRUE(unit_i == unit_j)) {
           X_tmp[, count] <- X[, i] - X[, j]
           head[count] <- paste0("(", head_in[i], "-", head_in[j], ")")
-          unit[[count]] <- dimen_i
+          unit[[count]] <- unit_i
         } else {
           head[count] <- "empty"
           unit[[count]] <- "empty"
@@ -136,7 +136,7 @@ MINUS <- function(dat) {
 MULTI <- function(dat) {
   X <- dat$X
   head_in <- dat$head
-  dimen_in <- dat$unit
+  unit_in <- dat$unit
 
   n <- nrow(X)
   p <- ncol(X)
@@ -145,7 +145,7 @@ MULTI <- function(dat) {
   unit <- list()
   count <- 1
 
-  if (is.null(dimen_in)) {
+  if (is.null(unit_in)) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- X[, i] * X[, j]
@@ -160,22 +160,22 @@ MULTI <- function(dat) {
         X_tmp[, count] <- X[, i] * X[, j]
         head[count] <- paste0("(", head_in[i], "*", head_in[j], ")")
 
-        dimen_i <- dimen_in[[i]]
-        dimen_j <- dimen_in[[j]]
-        dimen_i <- dimen_i[order(names(dimen_i))]
-        dimen_j <- dimen_j[order(names(dimen_j))]
-        names <- union(names(dimen_i), names(dimen_j))
-        names_i <- setdiff(names, names(dimen_i))
-        names_j <- setdiff(names, names(dimen_j))
+        unit_i <- unit_in[[i]]
+        unit_j <- unit_in[[j]]
+        unit_i <- unit_i[order(names(unit_i))]
+        unit_j <- unit_j[order(names(unit_j))]
+        names <- union(names(unit_i), names(unit_j))
+        names_i <- setdiff(names, names(unit_i))
+        names_j <- setdiff(names, names(unit_j))
         if (length(names_i) > 0) {
-          dimen_i[names_i] <- 0
-          dimen_i <- dimen_i[order(names(dimen_i))]
+          unit_i[names_i] <- 0
+          unit_i <- unit_i[order(names(unit_i))]
         }
         if (length(names_j) > 0) {
-          dimen_j[names_j] <- 0
-          dimen_j <- dimen_j[order(names(dimen_j))]
+          unit_j[names_j] <- 0
+          unit_j <- unit_j[order(names(unit_j))]
         }
-        unit[[count]] <- dimen_i + dimen_j
+        unit[[count]] <- unit_i + unit_j
         count <- count + 1
       }
     }
@@ -190,17 +190,17 @@ MULTI <- function(dat) {
 DIVD <- function(dat) {
   X <- dat$X
   head_in <- dat$head
-  dimen_in <- dat$unit
+  unit_in <- dat$unit
 
   n <- nrow(X)
   p <- ncol(X)
   X_tmp_1 <- matrix(0, nrow = n, ncol = choose(p, 2))
   X_tmp_2 <- matrix(0, nrow = n, ncol = choose(p, 2))
   head_1 <- head_2 <- c()
-  dimen_1 <- dimen_2 <- list()
+  unit_1 <- unit_2 <- list()
   count <- 1
 
-  if (is.null(dimen_in)) {
+  if (is.null(unit_in)) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         if (all(X[, j] != 0)) {
@@ -227,55 +227,55 @@ DIVD <- function(dat) {
     X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
     head_2 <- head_2[!idx_empty_2]
 
-    dimen_1 <- dimen_2 <- NULL
+    unit_1 <- unit_2 <- NULL
   } else {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
-        dimen_i <- dimen_in[[i]]
-        dimen_j <- dimen_in[[j]]
-        dimen_i <- dimen_i[order(names(dimen_i))]
-        dimen_j <- dimen_j[order(names(dimen_j))]
+        unit_i <- unit_in[[i]]
+        unit_j <- unit_in[[j]]
+        unit_i <- unit_i[order(names(unit_i))]
+        unit_j <- unit_j[order(names(unit_j))]
 
         if (all(X[, j] != 0)) {
           X_tmp_1[, count] <- X[, i] / X[, j]
           head_1[count] <- paste0("(", head_in[i], "/", head_in[j], ")")
 
-          names <- union(names(dimen_i), names(dimen_j))
-          names_i <- setdiff(names, names(dimen_i))
-          names_j <- setdiff(names, names(dimen_j))
+          names <- union(names(unit_i), names(unit_j))
+          names_i <- setdiff(names, names(unit_i))
+          names_j <- setdiff(names, names(unit_j))
           if (length(names_i) > 0) {
-            dimen_i[names_i] <- 0
-            dimen_i <- dimen_i[order(names(dimen_i))]
+            unit_i[names_i] <- 0
+            unit_i <- unit_i[order(names(unit_i))]
           }
           if (length(names_j) > 0) {
-            dimen_j[names_j] <- 0
-            dimen_j <- dimen_j[order(names(dimen_j))]
+            unit_j[names_j] <- 0
+            unit_j <- unit_j[order(names(unit_j))]
           }
-          dimen_1[[count]] <- dimen_i - dimen_j
+          unit_1[[count]] <- unit_i - unit_j
         } else {
           head_1[count] <- "empty"
-          dimen_1[[count]] <- "empty"
+          unit_1[[count]] <- "empty"
         }
 
         if (all(X[, i] != 0)) {
           X_tmp_2[, count] <- X[, j] / X[, i]
           head_2[count] <- paste0("(", head_in[j], "/", head_in[i], ")")
 
-          names <- union(names(dimen_i), names(dimen_j))
-          names_i <- setdiff(names, names(dimen_i))
-          names_j <- setdiff(names, names(dimen_j))
+          names <- union(names(unit_i), names(unit_j))
+          names_i <- setdiff(names, names(unit_i))
+          names_j <- setdiff(names, names(unit_j))
           if (length(names_i) > 0) {
-            dimen_i[names_i] <- 0
-            dimen_i <- dimen_i[order(names(dimen_i))]
+            unit_i[names_i] <- 0
+            unit_i <- unit_i[order(names(unit_i))]
           }
           if (length(names_j) > 0) {
-            dimen_j[names_j] <- 0
-            dimen_j <- dimen_j[order(names(dimen_j))]
+            unit_j[names_j] <- 0
+            unit_j <- unit_j[order(names(unit_j))]
           }
-          dimen_2[[count]] <- dimen_j - dimen_i
+          unit_2[[count]] <- unit_j - unit_i
         } else {
           head_2[count] <- "empty"
-          dimen_2[[count]] <- "empty"
+          unit_2[[count]] <- "empty"
         }
         count <- count + 1
       }
@@ -287,27 +287,27 @@ DIVD <- function(dat) {
     # Remove non-physical descriptors
     X_tmp_1 <- as.matrix(X_tmp_1[, !idx_empty_1])
     head_1 <- head_1[!idx_empty_1]
-    dimen_1 <- dimen_1[!idx_empty_1]
+    unit_1 <- unit_1[!idx_empty_1]
 
     X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
     head_2 <- head_2[!idx_empty_2]
-    dimen_2 <- dimen_2[!idx_empty_2]
+    unit_2 <- unit_2[!idx_empty_2]
   }
 
   X_out <- cbind(X_tmp_1, X_tmp_2)
   head_out <- c(head_1, head_2)
-  dimen_out <- c(dimen_1, dimen_2)
+  unit_out <- c(unit_1, unit_2)
 
   data_out <- list(X = as.matrix(X_out),
                    head = head_out,
-                   unit = dimen_out)
+                   unit = unit_out)
   return(data_out)
 }
 
 MINUS_ABS <- function(dat) {
   X <- dat$X
   head_in <- dat$head
-  dimen_in <- dat$unit
+  unit_in <- dat$unit
 
   n <- nrow(X)
   p <- ncol(X)
@@ -316,7 +316,7 @@ MINUS_ABS <- function(dat) {
   unit <- list()
   count <- 1
 
-  if (is.null(dimen_in)) {
+  if (is.null(unit_in)) {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
         X_tmp[, count] <- abs(X[, i] - X[, j])
@@ -328,14 +328,14 @@ MINUS_ABS <- function(dat) {
   } else {
     for (i in 1:(p - 1)) {
       for (j in (i + 1):p) {
-        dimen_i <- dimen_in[[i]]
-        dimen_j <- dimen_in[[j]]
-        dimen_i <- dimen_i[order(names(dimen_i))]
-        dimen_j <- dimen_j[order(names(dimen_j))]
-        if (setequal(names(dimen_i), names(dimen_j)) && setequal(dimen_i, dimen_j)) {
+        unit_i <- unit_in[[i]]
+        unit_j <- unit_in[[j]]
+        unit_i <- unit_i[order(names(unit_i))]
+        unit_j <- unit_j[order(names(unit_j))]
+        if (setequal(names(unit_i), names(unit_j)) && setequal(unit_i, unit_j)) {
           X_tmp[, count] <- abs(X[, i] - X[, j])
           head[count] <- paste0("|", head_in[i], "-", head_in[j], "|")
-          unit[[count]] <- dimen_i
+          unit[[count]] <- unit_i
         } else {
           head[count] <- "empty"
           unit[[count]] <- "empty"

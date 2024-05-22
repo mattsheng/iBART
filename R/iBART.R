@@ -9,7 +9,7 @@
 #' @param X Input matrix of primary features \eqn{X}.
 #' @param y Response variable \eqn{y}.
 #' @param head Optional: name of primary features.
-#' @param unit Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_dimension()} for details.
+#' @param unit Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_unit()} for details.
 #' @param BART_var_sel_method Variable selection criterion used in BART. Three options are available: (1) "global_se", (2) "global_max", (3) "local". The default is "global_se". See \code{var_selection_by_permute} in \code{R} package \code{bartMachine} for more detail.
 #' @param num_trees BART parameter: number of trees to be grown in the sum-of-trees model. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_trees = 20}.
 #' @param num_burn_in BART parameter: number of MCMC samples to be discarded as ``burn-in". If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_burn_in = 10000}.
@@ -200,7 +200,7 @@ iBART <- function(X = NULL, y = NULL,
   #### iBART descriptor generation and selection ####
   if (verbose) cat("Start iBART descriptor generation and selection... \n")
   dat <- list(y = y, X = X, head = head, unit = unit,
-              X_selected = NULL, head_selected = NULL, dimen_selected = NULL,
+              X_selected = NULL, head_selected = NULL, unit_selected = NULL,
               # pos_idx_old = NULL, pos_idx_new = NULL,
               iBART_gen_size = c(px), iBART_sel_size = c(),
               iBART_in_sample_RMSE = NULL,
