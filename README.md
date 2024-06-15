@@ -53,7 +53,7 @@ y <- 15*(exp(X[,1])-exp(X[,2]))^2 + 20*sin(pi*X[,3]*X[,4])
        + rnorm(n, mean = 0, sd = 0.5)
 
 iBART_results <- iBART(X = X, y = y,
-                       head = colnames(X),
+                       name = colnames(X),
                        unit = NULL,                         # no unit information for simulation
                        opt = c("unary", "binary", "unary"), # unary operator first
                        sin_cos = TRUE,                      # add sin and cos to operator set
