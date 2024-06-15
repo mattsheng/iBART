@@ -4,15 +4,17 @@
 \alias{generate_unit}
 \title{A helper function to generate unit for iBART input}
 \usage{
-generate_unit(unit, dimension)
+generate_unit(X, unit, dimension)
 }
 \arguments{
+\item{X}{The design matrix X containing all the primary features}
+
 \item{unit}{A vector of unit of the primary features. For example, unit <- c("cm", "s"). Then the unit of \eqn{x1} is centimeter and the unit of \eqn{x2} is second.}
 
 \item{dimension}{A vector of dimension of the units. For example, unit <- c("cm", "s") and dimension <- c(2, 1) mean that the unit of \eqn{x1} is square centimeter and the unit of \eqn{x2} is second.}
 }
 \value{
-A list that contains unit and dimension information.
+A matrix whose rows are units and columns are covariates.
 }
 \description{
 A helper function to generate unit for iBART input

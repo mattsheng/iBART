@@ -1,409 +1,435 @@
-dataprocessing <- function(data) {
-  data$X <- as.matrix(data$X)
-
-  # Remove X cols with duplicated data
-  temp <- round(data$X, digits = 6)
-  dup_idx <- duplicated(temp, MARGIN = 2)
-  data$X <- as.matrix(data$X[, !dup_idx])
-  data$head <- data$head[!dup_idx]
-  if (!is.null(data$unit)) data$unit <- data$unit[!dup_idx]
-
-  # Remove columns with -Inf, Inf
-  inf_idx <- apply(data$X, 2, function(x) any(abs(x) == Inf))
-  data$X <- as.matrix(data$X[, !inf_idx])
-  data$head <- data$head[!inf_idx]
-  if (!is.null(data$unit)) data$unit <- data$unit[!inf_idx]
-
-  # Remove columns without variability
-  s <- apply(data$X, 2, function(x) sd(x))
-  no_var_idx <- (s == 0)
-  data$X <- as.matrix(data$X[, !no_var_idx])
-  data$head <- data$head[!no_var_idx]
-  if (!is.null(data$unit)) data$unit <- data$unit[!no_var_idx]
-  colnames(data$X) <- data$head
-
-  return(data)
-}
-
-
 ##### Binary Operations #####
 ADD <- function(dat) {
-  X <- dat$X
-  head_in <- dat$head
-  unit_in <- dat$unit
+  if (is.null(dat$unit)) {
+    p <- ncol(dat$X)
+    df_out <- list(X = matrix(0, nrow = nrow(dat$X), ncol = choose(p, 2)),
+                   unit = NULL,
+                   name = c())
+    count <- 1
 
-  n <- nrow(X)
-  p <- ncol(X)
-  X_tmp <- matrix(0, nrow = n, ncol = choose(p, 2))
-  head <- c()
-  unit <- list()
-  count <- 1
-
-  if (is.null(unit_in)) {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        X_tmp[, count] <- X[, i] + X[, j]
-        head[count] <- paste0("(", head_in[i], "+", head_in[j], ")")
+    for (i in 1:(p-1)) {
+      for (j in (i+1):p) {
+        df_out$X[, count] <- dat$X[, i] + dat$X[, j]
+        df_out$name[count] <- paste0("(", dat$name[i], "+", dat$name[j], ")")
         count <- count + 1
       }
     }
-    unit <- NULL
+    # colnames(df_out$X) <- df_out$name
+    return(df_out)
+
   } else {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        unit_i <- unit_in[[i]]
-        unit_j <- unit_in[[j]]
-        unit_i <- unit_i[order(names(unit_i))]
-        unit_j <- unit_j[order(names(unit_j))]
-        if (setequal(names(unit_i), names(unit_j)) && isTRUE(unit_i == unit_j)) {
-          X_tmp[, count] <- X[, i] + X[, j]
-          head[count] <- paste0("(", head_in[i], "+", head_in[j], ")")
-          unit[[count]] <- unit_i
-        } else {
-          head[count] <- "empty"
-          unit[[count]] <- "empty"
+    # 1. Only perform + on variables with the same unit: X_unit + X_unit
+    # 2. Can perform X_unit + X_const
+    # 3. Can perform X_unitless + X_unitless
+
+    # Find X_unitless
+    X_unitless <- NULL
+    name_unitless <- c()
+    unitless_col <- apply(dat$unit, 2, function(x) all(x == 0))
+    p_unitless <- sum(unitless_col)
+
+    if (p_unitless > 0) {
+      X_unitless <- as.matrix(dat$X[, unitless_col])
+      name_unitless <- dat$name[unitless_col]
+
+      # Find X_const
+      const_col <- apply(X_unitless, 2, function(x) length(unique(x)) == 1)
+      p_const <- sum(const_col)
+      if (p_const > 0) {
+        X_const <- as.matrix(X_unitless[, const_col])
+        name_const <- dat$name[const_col]
+      }
+    } else {
+      X_const <- NULL
+      p_const <- 0
+    }
+
+    # Find unique units
+    unit_var <- as.matrix(dat$unit[, !unitless_col])
+    unit_unique <- as.matrix(unique(unit_var, MARGIN = 2))
+
+    # Count number of X_unit + X_unit
+    unit_var_str <- apply(unit_var, 2, paste, collapse = ",")
+    p_var <- as.vector(table(unit_var_str))
+    p_1 <- sapply(p_var, function(x) if (x > 1) choose(x, 2) else 0)
+    p_1 <- sum(p_1)
+
+    # Count number of X_unit + X_const
+    p_2 <- sum(p_var * p_const)
+
+    # Count number of X_unitless + X_unitless
+    p_3 <- if (p_unitless > 1) choose(p_unitless, 2) else 0
+
+    p_total <- p_1 + p_2 + p_3
+
+    # Initialize df_out to store results
+    df_out <- list(X = matrix(nrow = nrow(dat$X), ncol = p_total),
+                   unit = NULL,
+                   name = c())
+    count <- 1
+
+    # Iterative over unique units
+    for (i in 1:ncol(unit_unique)) {
+      unit_tmp <- unit_unique[, i]
+      unit_id <- apply(dat$unit, 2, function(x) all(x == unit_tmp))
+      X_tmp <- as.matrix(dat$X[, unit_id])
+      name_tmp <- dat$name[unit_id]
+      p_tmp <- ncol(X_tmp)
+
+      #################
+      # X_unit + X_unit
+      #################
+      # Only + if there are at least 2 columns
+      if (p_tmp > 1) {
+        for (j in 1:(p_tmp-1)) {
+          for (k in (j+1):p_tmp) {
+            df_out$X[, count] <- X_tmp[, j] + X_tmp[, k]
+            df_out$name[count] <- paste0("(", name_tmp[j], "+", name_tmp[k], ")")
+            count <- count + 1
+          }
         }
-        count <- count + 1
+        p_tmp2 <- choose(p_tmp, 2)
+        df_out$unit <- cbind(df_out$unit,
+                             matrix(rep(unit_tmp, p_tmp2), ncol = p_tmp2))
+      }
+      ##################
+      # X_unit + X_const
+      ##################
+      # Only + if there are at least 1 column in both X_tmp and X_const
+      if ((p_const > 0) & (p_tmp > 0)) {
+        for (j in 1:p_tmp) {
+          for (k in 1:p_const){
+            df_out$X[, count] <- X_tmp[, j] + X_const[, k]
+            df_out$name[count] <- paste0("(", name_tmp[j], "+", name_const[k], ")")
+            count <- count + 1
+          }
+        }
+        p_tmp3 <- p_tmp * p_const
+        df_out$unit <- cbind(df_out$unit,
+                             matrix(rep(unit_tmp, p_tmp3), ncol = p_tmp3))
       }
     }
 
-    # Remove non-physical descriptors
-    idx_empty <- (head == "empty")
-    X_tmp <- as.matrix(X_tmp[, !idx_empty])
-    head <- head[!idx_empty]
-    unit <- unit[!idx_empty]
+    #########################
+    # X_unitless + X_unitless
+    #########################
+    if (p_unitless > 1) {
+      for (i in 1:(p_unitless-1)) {
+        for (j in (i+1):p_unitless) {
+          df_out$X[, count] <- X_unitless[, i] + X_unitless[, j]
+          df_out$name[count] <- paste0("(", name_unitless[i], "+", name_unitless[j], ")")
+          count <- count + 1
+        }
+      }
+      df_out$unit <- cbind(df_out$unit,
+                           matrix(0, nrow = nrow(df_out$unit), ncol = choose(p_unitless, 2)))
+    }
+    # colnames(df_out$X) <- df_out$name
+    return(df_out)
   }
-
-  data_out <- list(X = as.matrix(X_tmp),
-                   head = head,
-                   unit = unit)
-  return(data_out)
 }
 
 MINUS <- function(dat) {
-  X <- dat$X
-  head_in <- dat$head
-  unit_in <- dat$unit
+  if (is.null(dat$unit)) {
+    p <- ncol(dat$X)
+    df_out <- list(X = matrix(0, nrow = nrow(dat$X), ncol = choose(p, 2)),
+                   unit = NULL,
+                   name = c())
+    count <- 1
 
-  n <- nrow(X)
-  p <- ncol(X)
-  X_tmp <- matrix(0, nrow = n, ncol = choose(p, 2))
-  head <- c()
-  unit <- list()
-  count <- 1
-
-  if (is.null(unit_in)) {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        X_tmp[, count] <- X[, i] - X[, j]
-        head[count] <- paste0("(", head_in[i], "-", head_in[j], ")")
+    for (i in 1:(p-1)) {
+      for (j in (i+1):p) {
+        df_out$X[, count] <- dat$X[, i] - dat$X[, j]
+        df_out$name[count] <- paste0("(", dat$name[i], "-", dat$name[j], ")")
         count <- count + 1
       }
     }
-    unit <- NULL
+    # colnames(df_out$X) <- df_out$name
+    return(df_out)
+
   } else {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        unit_i <- unit_in[[i]]
-        unit_j <- unit_in[[j]]
-        unit_i <- unit_i[order(names(unit_i))]
-        unit_j <- unit_j[order(names(unit_j))]
-        if (setequal(names(unit_i), names(unit_j)) && isTRUE(unit_i == unit_j)) {
-          X_tmp[, count] <- X[, i] - X[, j]
-          head[count] <- paste0("(", head_in[i], "-", head_in[j], ")")
-          unit[[count]] <- unit_i
-        } else {
-          head[count] <- "empty"
-          unit[[count]] <- "empty"
+    # 1. Only perform - on variables with the same unit: X_unit - X_unit
+    # 2. Can perform X_unit - X_const
+    # 3. Can perform X_unitless - X_unitless
+
+    # Find X_unitless
+    X_unitless <- NULL
+    name_unitless <- c()
+    unitless_col <- apply(dat$unit, 2, function(x) all(x == 0))
+    p_unitless <- sum(unitless_col)
+
+    if (p_unitless > 0) {
+      X_unitless <- as.matrix(dat$X[, unitless_col])
+      name_unitless <- dat$name[unitless_col]
+
+      # Find X_const
+      const_col <- apply(X_unitless, 2, function(x) length(unique(x)) == 1)
+      p_const <- sum(const_col)
+      if (p_const > 0) {
+        X_const <- as.matrix(X_unitless[, const_col])
+        name_const <- dat$name[const_col]
+      }
+    } else {
+      X_const <- NULL
+      p_const <- 0
+    }
+
+    # Find unique units
+    unit_var <- as.matrix(dat$unit[, !unitless_col])
+    unit_unique <- as.matrix(unique(unit_var, MARGIN = 2))
+
+    # Count number of X_unit - X_unit
+    unit_var_str <- apply(unit_var, 2, paste, collapse = ",")
+    p_var <- as.vector(table(unit_var_str))
+    p_1 <- sapply(p_var, function(x) if (x > 1) choose(x, 2) else 0)
+    p_1 <- sum(p_1)
+
+    # Count number of X_unit - X_const
+    p_2 <- sum(p_var * p_const)
+
+    # Count number of X_unitless - X_unitless
+    p_3 <- if (p_unitless > 1) choose(p_unitless, 2) else 0
+
+    p_total <- p_1 + p_2 + p_3
+
+    # Initialize df_out to store results
+    df_out <- list(X = matrix(nrow = nrow(dat$X), ncol = p_total),
+                   unit = NULL,
+                   name = c())
+    count <- 1
+
+    # Iterative over unique units
+    for (i in 1:ncol(unit_unique)) {
+      unit_tmp <- unit_unique[, i]
+      unit_id <- apply(dat$unit, 2, function(x) all(x == unit_tmp))
+      X_tmp <- as.matrix(dat$X[, unit_id])
+      name_tmp <- dat$name[unit_id]
+      p_tmp <- ncol(X_tmp)
+
+      #################
+      # X_unit - X_unit
+      #################
+      # Only - if there are at least 2 columns
+      if (p_tmp > 1) {
+        for (j in 1:(p_tmp-1)) {
+          for (k in (j+1):p_tmp) {
+            df_out$X[, count] <- X_tmp[, j] - X_tmp[, k]
+            df_out$name[count] <- paste0("(", name_tmp[j], "-", name_tmp[k], ")")
+            count <- count + 1
+          }
         }
-        count <- count + 1
+        p_tmp2 <- choose(p_tmp, 2)
+        df_out$unit <- cbind(df_out$unit,
+                             matrix(rep(unit_tmp, p_tmp2), ncol = p_tmp2))
+      }
+      ##################
+      # X_unit - X_const
+      ##################
+      # Only - if there are at least 1 column in both X_tmp and X_const
+      if ((p_const > 0) & (p_tmp > 0)) {
+        for (j in 1:p_tmp) {
+          for (k in 1:p_const){
+            df_out$X[, count] <- X_tmp[, j] - X_const[, k]
+            df_out$name[count] <- paste0("(", name_tmp[j], "-", name_const[k], ")")
+            count <- count + 1
+          }
+        }
+        p_tmp3 <- p_tmp * p_const
+        df_out$unit <- cbind(df_out$unit,
+                             matrix(rep(unit_tmp, p_tmp3), ncol = p_tmp3))
       }
     }
 
-    # Remove non-physical descriptors
-    idx_empty <- (head == "empty")
-    X_tmp <- as.matrix(X_tmp[, !idx_empty])
-    head <- head[!idx_empty]
-    unit <- unit[!idx_empty]
+    #########################
+    # X_unitless - X_unitless
+    #########################
+    if (p_unitless > 1) {
+      for (i in 1:(p_unitless-1)) {
+        for (j in (i+1):p_unitless) {
+          df_out$X[, count] <- X_unitless[, i] - X_unitless[, j]
+          df_out$name[count] <- paste0("(", name_unitless[i], "-", name_unitless[j], ")")
+          count <- count + 1
+        }
+      }
+      df_out$unit <- cbind(df_out$unit,
+                           matrix(0, nrow = nrow(df_out$unit), ncol = choose(p_unitless, 2)))
+    }
+    # colnames(df_out$X) <- df_out$name
+    return(df_out)
   }
-
-  data_out <- list(X = as.matrix(X_tmp),
-                   head = head,
-                   unit = unit)
-  return(data_out)
 }
 
 MULTI <- function(dat) {
-  X <- dat$X
-  head_in <- dat$head
-  unit_in <- dat$unit
-
-  n <- nrow(X)
-  p <- ncol(X)
-  X_tmp <- matrix(0, nrow = n, ncol = choose(p, 2))
-  head <- c()
-  unit <- list()
+  p <- ncol(dat$X)
+  df_out <- list(X = matrix(0, nrow = nrow(dat$X), ncol = choose(p, 2)),
+                 unit = if (is.null(dat$unit)) NULL else matrix(0, nrow = nrow(dat$unit), ncol = choose(p, 2)),
+                 name = c())
   count <- 1
-
-  if (is.null(unit_in)) {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        X_tmp[, count] <- X[, i] * X[, j]
-        head[count] <- paste0("(", head_in[i], "*", head_in[j], ")")
+  if (is.null(dat$unit)) {
+    for (i in 1:(p-1)) {
+      for (j in (i+1):p) {
+        df_out$X[, count] <- dat$X[, i] * dat$X[, j]
+        df_out$name[count] <- paste0("(", dat$name[i], "*", dat$name[j], ")")
         count <- count + 1
       }
     }
-    unit <- NULL
   } else {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        X_tmp[, count] <- X[, i] * X[, j]
-        head[count] <- paste0("(", head_in[i], "*", head_in[j], ")")
-
-        unit_i <- unit_in[[i]]
-        unit_j <- unit_in[[j]]
-        unit_i <- unit_i[order(names(unit_i))]
-        unit_j <- unit_j[order(names(unit_j))]
-        names <- union(names(unit_i), names(unit_j))
-        names_i <- setdiff(names, names(unit_i))
-        names_j <- setdiff(names, names(unit_j))
-        if (length(names_i) > 0) {
-          unit_i[names_i] <- 0
-          unit_i <- unit_i[order(names(unit_i))]
-        }
-        if (length(names_j) > 0) {
-          unit_j[names_j] <- 0
-          unit_j <- unit_j[order(names(unit_j))]
-        }
-        unit[[count]] <- unit_i + unit_j
+    for (i in 1:(p-1)) {
+      for (j in (i+1):p) {
+        df_out$X[, count] <- dat$X[, i] * dat$X[, j]
+        df_out$unit[, count] <- dat$unit[, i] + dat$unit[, j]
+        df_out$name[count] <- paste0("(", dat$name[i], "*", dat$name[j], ")")
         count <- count + 1
       }
     }
   }
-
-  data_out <- list(X = as.matrix(X_tmp),
-                   head = head,
-                   unit = unit)
-  return(data_out)
+  # colnames(df_out$X) <- df_out$name
+  return(df_out)
 }
 
 DIVD <- function(dat) {
-  X <- dat$X
-  head_in <- dat$head
-  unit_in <- dat$unit
+  # Find columns that have 0
+  # Put nonzero columns first, then zero columns
+  p <- ncol(dat$X)
+  col_nonzero <- which(apply(dat$X, 2, function(x) all(x != 0)))
+  col_zero <- setdiff(1:p, col_nonzero)
+  dat$X <- dat$X[, c(col_nonzero, col_zero)]
+  dat$unit <- dat$unit[, c(col_nonzero, col_zero)]
+  dat$name <- dat$name[c(col_nonzero, col_zero)]
 
-  n <- nrow(X)
-  p <- ncol(X)
-  X_tmp_1 <- matrix(0, nrow = n, ncol = choose(p, 2))
-  X_tmp_2 <- matrix(0, nrow = n, ncol = choose(p, 2))
-  head_1 <- head_2 <- c()
-  unit_1 <- unit_2 <- list()
-  count <- 1
-
-  if (is.null(unit_in)) {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        if (all(X[, j] != 0)) {
-          X_tmp_1[, count] <- X[, i] / X[, j]
-          head_1[count] <- paste0("(", head_in[i], "/", head_in[j], ")")
-        } else {
-          head_1[count] <- "empty"
-        }
-        if (all(X[, i] != 0)) {
-          X_tmp_2[, count] <- X[, j] / X[, i]
-          head_2[count] <- paste0("(", head_in[j], "/", head_in[i], ")")
-        } else {
-          head_2[count] <- "empty"
-        }
-        count <- count + 1
-      }
-    }
-    idx_empty_1 <- (head_1 == "empty")
-    idx_empty_2 <- (head_2 == "empty")
-
-    # Remove non-physical descriptors
-    X_tmp_1 <- as.matrix(X_tmp_1[, !idx_empty_1])
-    head_1 <- head_1[!idx_empty_1]
-    X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
-    head_2 <- head_2[!idx_empty_2]
-
-    unit_1 <- unit_2 <- NULL
-  } else {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        unit_i <- unit_in[[i]]
-        unit_j <- unit_in[[j]]
-        unit_i <- unit_i[order(names(unit_i))]
-        unit_j <- unit_j[order(names(unit_j))]
-
-        if (all(X[, j] != 0)) {
-          X_tmp_1[, count] <- X[, i] / X[, j]
-          head_1[count] <- paste0("(", head_in[i], "/", head_in[j], ")")
-
-          names <- union(names(unit_i), names(unit_j))
-          names_i <- setdiff(names, names(unit_i))
-          names_j <- setdiff(names, names(unit_j))
-          if (length(names_i) > 0) {
-            unit_i[names_i] <- 0
-            unit_i <- unit_i[order(names(unit_i))]
-          }
-          if (length(names_j) > 0) {
-            unit_j[names_j] <- 0
-            unit_j <- unit_j[order(names(unit_j))]
-          }
-          unit_1[[count]] <- unit_i - unit_j
-        } else {
-          head_1[count] <- "empty"
-          unit_1[[count]] <- "empty"
-        }
-
-        if (all(X[, i] != 0)) {
-          X_tmp_2[, count] <- X[, j] / X[, i]
-          head_2[count] <- paste0("(", head_in[j], "/", head_in[i], ")")
-
-          names <- union(names(unit_i), names(unit_j))
-          names_i <- setdiff(names, names(unit_i))
-          names_j <- setdiff(names, names(unit_j))
-          if (length(names_i) > 0) {
-            unit_i[names_i] <- 0
-            unit_i <- unit_i[order(names(unit_i))]
-          }
-          if (length(names_j) > 0) {
-            unit_j[names_j] <- 0
-            unit_j <- unit_j[order(names(unit_j))]
-          }
-          unit_2[[count]] <- unit_j - unit_i
-        } else {
-          head_2[count] <- "empty"
-          unit_2[[count]] <- "empty"
-        }
-        count <- count + 1
-      }
-    }
-
-    idx_empty_1 <- (head_1 == "empty")
-    idx_empty_2 <- (head_2 == "empty")
-
-    # Remove non-physical descriptors
-    X_tmp_1 <- as.matrix(X_tmp_1[, !idx_empty_1])
-    head_1 <- head_1[!idx_empty_1]
-    unit_1 <- unit_1[!idx_empty_1]
-
-    X_tmp_2 <- as.matrix(X_tmp_2[, !idx_empty_2])
-    head_2 <- head_2[!idx_empty_2]
-    unit_2 <- unit_2[!idx_empty_2]
+  # Record which are nonzero and which are zero
+  p_nonzero <- length(col_nonzero)
+  p_zero <- ncol(dat$X) - p_nonzero
+  p_total <- p_nonzero * (p_nonzero - 1) + p_nonzero * p_zero
+  if (p_total == 0) {
+    cat("There is no column that is strictly nonzero. Cannot perform division.")
+    return(list(X = NULL, unit = NULL, name = c()))
   }
 
-  X_out <- cbind(X_tmp_1, X_tmp_2)
-  head_out <- c(head_1, head_2)
-  unit_out <- c(unit_1, unit_2)
-
-  data_out <- list(X = as.matrix(X_out),
-                   head = head_out,
-                   unit = unit_out)
-  return(data_out)
-}
-
-MINUS_ABS <- function(dat) {
-  X <- dat$X
-  head_in <- dat$head
-  unit_in <- dat$unit
-
-  n <- nrow(X)
-  p <- ncol(X)
-  X_tmp <- matrix(0, nrow = n, ncol = choose(p, 2))
-  head <- c()
-  unit <- list()
+  df_out <- list(X = matrix(nrow = nrow(dat$X), ncol = p_total),
+                 unit = if (is.null(dat$unit)) NULL else matrix(nrow = nrow(dat$unit), ncol = p_total),
+                 name = c())
   count <- 1
 
-  if (is.null(unit_in)) {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        X_tmp[, count] <- abs(X[, i] - X[, j])
-        head[count] <- paste0("|", head_in[i], "-", head_in[j], "|")
-        count <- count + 1
-      }
-    }
-    unit <- NULL
-  } else {
-    for (i in 1:(p - 1)) {
-      for (j in (i + 1):p) {
-        unit_i <- unit_in[[i]]
-        unit_j <- unit_in[[j]]
-        unit_i <- unit_i[order(names(unit_i))]
-        unit_j <- unit_j[order(names(unit_j))]
-        if (setequal(names(unit_i), names(unit_j)) && setequal(unit_i, unit_j)) {
-          X_tmp[, count] <- abs(X[, i] - X[, j])
-          head[count] <- paste0("|", head_in[i], "-", head_in[j], "|")
-          unit[[count]] <- unit_i
-        } else {
-          head[count] <- "empty"
-          unit[[count]] <- "empty"
+  if (is.null(dat$unit)) {
+    #### Operation 1: on X.no.zero ###
+    if (p_nonzero > 1) {
+      for (i in 1:(p_nonzero - 1)) {
+        for (j in (i + 1):p_nonzero) {
+          df_out$X[, count] <- dat$X[, i] / dat$X[, j]
+          df_out$name[count] <- paste0("(", dat$name[i], "/", dat$name[j], ")")
+          count <- count + 1
+          df_out$X[, count] <- dat$X[, j] / dat$X[, i]
+          df_out$name[count] <- paste0("(", dat$name[j], "/", dat$name[i], ")")
+          count <- count + 1
         }
-        count <- count + 1
       }
     }
 
-    # Remove non-physical descriptors
-    idx_empty <- (head == "empty")
-    X_tmp <- as.matrix(X_tmp[, !idx_empty])
-    head <- head[!idx_empty]
-    unit <- unit[!idx_empty]
+    #### Operation 2: on X.some.zero ####
+    if ((p_nonzero > 0) & (p_zero > 0)) {
+      for (i in (p_nonzero + 1):p) {
+        for (j in 1:p_nonzero) {
+          df_out$X[, count] <- dat$X[, i] / dat$X[, j]
+          df_out$name[count] <- paste0("(", dat$name[i], "/", dat$name[j], ")")
+          count <- count + 1
+        }
+      }
+    }
+  } else {
+    #### Operation 1: on X.no.zero ###
+    if (p_nonzero > 1) {
+      for (i in 1:(p_nonzero - 1)) {
+        for (j in (i + 1):p_nonzero) {
+          df_out$X[, count] <- dat$X[, i] / dat$X[, j]
+          df_out$unit[, count] <- dat$unit[, i] - dat$unit[, j]
+          df_out$name[count] <- paste0("(", dat$name[i], "/", dat$name[j], ")")
+          count <- count + 1
+          df_out$X[, count] <- dat$X[, j] / dat$X[, i]
+          df_out$unit[, count] <- dat$unit[, j] - dat$unit[, i]
+          df_out$name[count] <- paste0("(", dat$name[j], "/", dat$name[i], ")")
+          count <- count + 1
+        }
+      }
+    }
+
+    #### Operation 2: on X.some.zero ####
+    if ((p_nonzero > 0) & (p_zero > 0)) {
+      for (i in (p_nonzero + 1):p) {
+        for (j in 1:p_nonzero) {
+          df_out$X[, count] <- dat$X[, i] / dat$X[, j]
+          df_out$unit[, count] <- dat$unit[, i] - dat$unit[, j]
+          df_out$name[count] <- paste0("(", dat$name[i], "/", dat$name[j], ")")
+          count <- count + 1
+        }
+      }
+    }
   }
 
-  data_out <- list(X = as.matrix(X_tmp),
-                   head = head,
-                   unit = unit)
-  return(data_out)
+  # colnames(df_out$X) <- df_out$name
+  return(df_out)
 }
 
 binary <- function(data, sin_cos) {
   p <- ncol(data$X)
   if (p < 2) {
     message("X has less than 2 columns. Need at least 2 columns to perform binary operations!")
-    data$error <- TRUE
     return(data)
   } else {
-    # Binary operations
-    data_add <- ADD(data)
+
+    data_binary <- data
+
+    # ADD
+    data_tmp <- ADD(data)
+    data_binary$X <- data_tmp$X
+    data_binary$unit <- data_tmp$unit
+    data_binary$name <- data_tmp$name
+    data_tmp <- NULL
+
+    # MINUS
     data_minus <- MINUS(data)
-    data_multi <- MULTI(data)
-    data_divd <- DIVD(data)
+    data_binary$X <- cbind(data_binary$X, data_minus$X)
+    data_binary$unit <- cbind(data_binary$unit, data_minus$unit)
+    data_binary$name <- c(data_binary$name, data_minus$name)
 
-    dat_tmp <- list()
-    dat_tmp$X <- cbind(data_add$X, data_minus$X, data_multi$X, data_divd$X)
-    dat_tmp$head <- c(data_add$head, data_minus$head, data_multi$head, data_divd$head)
-    dat_tmp$unit <- c(data_add$unit, data_minus$unit, data_multi$unit, data_divd$unit)
+    # MULTI
+    data_tmp <- MULTI(data)
+    data_binary$X <- cbind(data_binary$X, data_tmp$X)
+    data_binary$unit <- cbind(data_binary$unit, data_tmp$unit)
+    data_binary$name <- c(data_binary$name, data_tmp$name)
+    data_tmp <- NULL
 
-    # Combine datasets
-    if (sin_cos == FALSE) {
-      data_abs <- ABS(dat_tmp)
-      data$X <- cbind(dat_tmp$X, data_abs$X)
-      data$head <- c(dat_tmp$head, data_abs$head)
-      data$unit <- c(dat_tmp$unit, data_abs$unit)
-    } else{
-      data_abs_minus <- MINUS_ABS(data)
-      data$X <- cbind(dat_tmp$X, data_abs_minus$X)
-      data$head <- c(dat_tmp$head, data_abs_minus$head)
-      data$unit <- c(dat_tmp$unit, data_abs_minus$unit)
-    }
-    colnames(data$X) <- unname(data$head)
+    # DIVD
+    data_tmp <- DIVD(data)
+    data_binary$X <- cbind(data_binary$X, data_tmp$X)
+    data_binary$unit <- cbind(data_binary$unit, data_tmp$unit)
+    data_binary$name <- c(data_binary$name, data_tmp$name)
+    data_tmp <- NULL
+
+    # MINUS_ABS
+    data_tmp <- ABS(data_minus)
+    data_minus <- NULL
+    data_binary$X <- cbind(data_binary$X, data_tmp$X)
+    data_binary$unit <- cbind(data_binary$unit, data_tmp$unit)
+    data_binary$name <- c(data_binary$name, data_tmp$name)
+    data_tmp <- NULL
 
     # Remove redundant descriptors
-    data <- dataprocessing(data)
-    return(data)
+    data_binary$name <- unname(data_binary$name)
+    colnames(data_binary$X) <- data_binary$name
+    data_binary <- dataprocessing(data_binary)
+
+    cat(c(paste0("Finished building X.binary... Initial p = ", p, "; New p = ", ncol(data_binary$X)), "\n"))
+    return(data_binary)
   }
 }
 
 ##### Unary Operations #####
 ABS <- function(dat) {
-  dat$X <- apply(dat$X, 2, function(x) abs(x))
-  dat$head <- unname(sapply(dat$head, function(x) paste0("abs(", x, ")")))
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  dat$X <- abs(dat$X)
+  dat$name <- unname(sapply(dat$name, function(x) paste0("abs(", x, ")")))
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 SQRT <- function(dat, apply_pos_opt_on_neg_x) {
@@ -411,118 +437,115 @@ SQRT <- function(dat, apply_pos_opt_on_neg_x) {
   neg_col <- apply(dat$X, 2, function(x) any(x < 0))
 
   if (apply_pos_opt_on_neg_x) {
-    dat$X <- suppressWarnings(apply(dat$X, 2, function(x) sqrt(abs(x))))
-    dat$head <- unname(sapply(dat$head, function(x) paste0(x, "^0.5")))
-    if (any(neg_col)) dat$head[neg_col] <- unname(sapply(dat$head[neg_col], function(x) paste0("abs(", x, ")^0.5")))
-    if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 0*x)
+    dat$X <- sqrt(abs(dat$X))
+    if (any(neg_col)) dat$name[neg_col] <- unname(sapply(dat$name[neg_col], function(x) paste0("abs(", x, ")")))
+    dat$name <- unname(sapply(dat$name, function(x) paste0("sqrt(", x, ")")))
+    if (!is.null(dat$unit)) {
+      dat$unit[,] <- 0
+    }
   } else {
-    if (sum(neg_col) == ncol(dat$X)) {
-      return(list(X = NULL, head = NULL, unit = NULL))
-    } else {
-      dat$X <- suppressWarnings(apply(as.matrix(dat$X[, !neg_col]), 2, function(x) sqrt(abs(x))))
-      dat$head <- unname(sapply(dat$head[!neg_col], function(x) paste0(x, "^0.5")))
-      if (!is.null(dat$unit)) dat$unit <- dat$unit[!neg_col]
+    if (sum(neg_col) == ncol(dat$X)) return(list(X = NULL, unit = NULL, name = NULL))
+
+    # Apply sqrt on non-negative columns
+    dat$X <- as.matrix(sqrt(dat$X[, !neg_col]))
+    dat$name <- unname(sapply(dat$name[!neg_col], function(x) paste0("sqrt(", x, ")")))
+    if (!is.null(dat$unit)) {
+      dat$unit <- matrix(0, nrow = nrow(dat$unit), ncol = ncol(dat$X))
     }
   }
-  dat$X <- as.matrix(dat$X)
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 INV <- function(dat) {
   # Remove columns containing 0
   zero_idx <- apply(dat$X, 2, function(x) any(x == 0))
+  if (sum(zero_idx) == ncol(dat$X)) return(list(X = NULL, unit = NULL, name = c()))
 
-  dat$X <- suppressWarnings(apply(as.matrix(dat$X[, !zero_idx]), 2, function(x) x^(-1)))
-  dat$head <- unname(sapply(dat$head[!zero_idx], function(x) paste0(x, "^(-1)")))
-  if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit[!zero_idx], function(x) -x)
-
-  dat$X <- as.matrix(dat$X)
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  # Calculate 1/X for non-zero columns
+  dat$X <- as.matrix(1 / dat$X[, !zero_idx])
+  dat$name <- unname(sapply(dat$name[!zero_idx], function(x) paste0("(1/", x, ")")))
+  if (!is.null(dat$unit)) {
+    dat$unit <- as.matrix(-dat$unit[, !zero_idx])
+  }
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 SQRE <- function(dat) {
-  dat$X <- apply(dat$X, 2, function(x) x^2)
-  dat$head <- unname(sapply(dat$head, function(x) paste0(x, "^2")))
-  if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 2 * x)
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  dat$X <- dat$X^2
+  dat$name <- unname(sapply(dat$name, function(x) paste0("(", x, ")^2")))
+  if (!is.null(dat$unit)) {
+    dat$unit <- 2 * dat$unit
+  }
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 LOG <- function(dat, apply_pos_opt_on_neg_x) {
+  # Remove columns containing 0
+  zero_col <- apply(dat$X, 2, function(x) any(x == 0))
+  dat$X <- as.matrix(dat$X[, !zero_col])
+  dat$name <- dat$name[!zero_col]
+  dat$unit <- if (is.null(dat$unit)) NULL else as.matrix(dat$unit[, !zero_col])
+
   # Record which columns has negative values
   neg_col <- apply(dat$X, 2, function(x) any(x < 0))
 
-  if (apply_pos_opt_on_neg_x) {
-    dat$X <- suppressWarnings(apply(dat$X, 2, function(x) log(abs(x))))
-    dat$head <- unname(sapply(dat$head, function(x) paste0("log(", x, ")")))
-    if (any(neg_col)) dat$head[neg_col] <- unname(sapply(dat$head[neg_col], function(x) paste0("log(abs(", x, "))")))
-    if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 0*x)
+  if (apply_pos_opt_on_neg_x & any(neg_col)) {
+    dat$X <- log(abs(dat$X))
+    dat$name[neg_col] <- unname(sapply(dat$name[neg_col], function(x) paste0("abs(", x, ")")))
+    dat$name <- unname(sapply(dat$name, function(x) paste0("log(", x, ")")))
+    if (!is.null(dat$unit)) {
+      dat$unit[,] <- 0
+    }
   } else {
-    if (sum(neg_col) == ncol(dat$X)) {
-      return(list(X = NULL, head = NULL, unit = NULL))
-    } else {
-      dat$X <- suppressWarnings(apply(as.matrix(dat$X[, !neg_col]), 2, function(x) log(abs(x))))
-      dat$head <- unname(sapply(dat$head[!neg_col], function(x) paste0("log(", x, ")")))
-      if (!is.null(dat$unit)) dat$unit <- dat$unit[!neg_col]
+    if (sum(neg_col) == ncol(dat$X)) return(list(X = NULL, unit = NULL, name = NULL))
+
+    # Apply log to positive columns
+    dat$X <- as.matrix(log(dat$X[, !neg_col]))
+    dat$name <- unname(sapply(dat$name[!neg_col], function(x) paste0("log(", x, ")")))
+    if (!is.null(dat$unit)) {
+      dat$unit <- matrix(0, nrow = nrow(dat$unit), ncol = ncol(dat$X))
     }
   }
-
-  # Remove NAs in case of log(0)
-  NA_col <- apply(as.matrix(dat$X), 2, anyNA)
-  dat$X <- as.matrix(dat$X[, !NA_col])
-  dat$head <- dat$head[!NA_col]
-  if (!is.null(dat$unit)) dat$unit <- dat$unit[!NA_col]
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 EXP <- function(dat) {
-  dat$X <- apply(dat$X, 2, function(x) exp(x))
-  dat$head <- unname(sapply(dat$head, function(x) paste0("exp(", x, ")")))
-  if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 0*x)
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  dat$X <- exp(dat$X)
+  dat$name <- unname(sapply(dat$name, function(x) paste0("exp(", x, ")")))
+  if (!is.null(dat$unit)) {
+    dat$unit[,] <- 0
+  }
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 SIN <- function(dat) {
-  dat$X <- apply(dat$X, 2, function(x) sin(pi * x))
-  dat$head <- unname(sapply(dat$head, function(x) paste0("sin(pi*", x, ")")))
-  if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 0*x)
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  dat$X <- sin(pi * dat$X)
+  dat$name <- unname(sapply(dat$name, function(x) paste0("sin(pi*", x, ")")))
+  if (!is.null(dat$unit)) {
+    dat$unit[,] <- 0
+  }
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 COS <- function(dat) {
-  dat$X <- apply(dat$X, 2, function(x) cos(pi * x))
-  dat$head <- unname(sapply(dat$head, function(x) paste0("cos(pi*", x, ")")))
-  if (!is.null(dat$unit)) dat$unit <- lapply(dat$unit, function(x) 0*x)
-
-  data_out <- list(X = dat$X,
-                   head = dat$head,
-                   unit = dat$unit)
-  return(data_out)
+  dat$X <- cos(pi * dat$X)
+  dat$name <- unname(sapply(dat$name, function(x) paste0("cos(pi*", x, ")")))
+  if (!is.null(dat$unit)) {
+    dat$unit[,] <- 0
+  }
+  # colnames(dat$X) <- dat$name
+  return(dat)
 }
 
 unary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
   p <- ncol(data$X)
+
   if (p < 1) {
     stop("X has zero column. Need at least 1 column to perform unary operations!")
   } else {
@@ -534,7 +557,7 @@ unary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
     data_log <- LOG(data, apply_pos_opt_on_neg_x)
     data_exp <- EXP(data)
 
-    if(sin_cos == TRUE){
+    if (sin_cos) {
       data_sin <- SIN(data)
       data_cos <- COS(data)
 
@@ -542,29 +565,31 @@ unary <- function(data, sin_cos, apply_pos_opt_on_neg_x) {
       data$X <- cbind(data$X, data_sqrt$X, data_sqre$X,
                       data_log$X, data_exp$X, data_sin$X,
                       data_cos$X, data_inv$X, data_abs$X)
-      data$head <- c(data$head, data_sqrt$head, data_sqre$head,
-                     data_log$head, data_exp$head, data_sin$head,
-                     data_cos$head, data_inv$head, data_abs$head)
-      data$unit <- c(data$unit, data_sqrt$unit, data_sqre$unit,
-                      data_log$unit, data_exp$unit, data_sin$unit,
-                      data_cos$unit, data_inv$unit, data_abs$unit)
-    } else{
+      data$unit <- cbind(data$unit, data_sqrt$unit, data_sqre$unit,
+                         data_log$unit, data_exp$unit, data_sin$unit,
+                         data_cos$unit, data_inv$unit, data_abs$unit)
+      data$name <- unname(c(data$name, data_sqrt$name, data_sqre$name,
+                            data_log$name, data_exp$name, data_sin$name,
+                            data_cos$name, data_inv$name, data_abs$name))
+    } else {
       # Combine datasets
-      data$X <- cbind(data$X, data_abs$X, data_sqrt$X,
-                      data_inv$X, data_sqre$X, data_log$X,
-                      data_exp$X)
-      data$head <- c(data$head, data_abs$head, data_sqrt$head,
-                     data_inv$head, data_sqre$head, data_log$head,
-                     data_exp$head)
-      data$unit <- c(data$unit, data_abs$unit, data_sqrt$unit,
-                      data_inv$unit, data_sqre$unit, data_log$unit,
-                      data_exp$unit)
+      data$X <- cbind(data$X, data_sqrt$X, data_sqre$X,
+                      data_log$X, data_exp$X,
+                      data_inv$X, data_abs$X)
+      data$unit <- cbind(data$unit, data_sqrt$unit, data_sqre$unit,
+                         data_log$unit, data_exp$unit,
+                         data_inv$unit, data_abs$unit)
+      data$name <- unname(c(data$name, data_sqrt$name, data_sqre$name,
+                            data_log$name, data_exp$name,
+                            data_inv$name, data_abs$name))
     }
 
-    colnames(data$X) <- unname(data$head)
+    colnames(data$X) <- data$name
 
     # Remove redundant descriptors
     data <- dataprocessing(data)
+
+    cat(c(paste0("Building X.unary... Initial p = ", p, "; New p = ", ncol(data$X)), "\n"))
     return(data)
   }
 }

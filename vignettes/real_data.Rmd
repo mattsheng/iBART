@@ -38,8 +38,8 @@ The data set consists of 4 objects:
 
 + `X`: a `matrix` of physical properties of the transition metals and the oxide supports described in [Data Description](#data). These are our primary features (predictors).
 + `y`: a `numeric` vector of metal/oxide binding energy described in [Data Description](#data). This is our response variable.
-+ `head`: a `character` vector storing the column names of `X`.
-+ `unit`: a (optional) `list` of named numeric vectors. This stores the unit information of the primary features `X`. This can be generated using the helper function `generate_unit(unit, dimension)`. See `?iBART::generate_unit` for more detail.
++ `name`: a `character` vector storing the column names of `X`.
++ `unit`: a (optional) `matrix` whose columns store the unit information of the primary features `X`. This can be generated using the helper function `generate_unit(X, unit, dimension)`. See `?iBART::generate_unit` for more detail.
 
 ## iBART
 Now let's apply iBART to the data set. Besides the usual regression data `(X,y)`, we need to specify the descriptor generating strategy through `opt`. Here we set `opt = c("binary", "unary", "binary")`, the descriptor generating strategy described in (8) of [our paper](https://arxiv.org/abs/2110.10195). That is, we let iBART run for 3 descriptor generating iterations, where binary operators $\mathcal{O}_b$ are used in the 1st iteration, unary operators $\mathcal{O}_u$ in the 2nd iteration, and binary operators $\mathcal{O}_b$ in the 3rd iteration. 
@@ -54,7 +54,7 @@ For example, `opt = c("all", "all")` will apply all operators $\mathcal{O}$ for 
 
 ```{r iBART, eval=FALSE}
 iBART_real_data <- iBART(X = catalysis$X, y = catalysis$y,
-                         head = catalysis$head,  # colnames of X
+                         name = catalysis$head,  # colnames of X
                          unit = catalysis$unit,  # units of X
                          opt = c("binary", "unary", "binary"), # binary operator first
                          out_sample = FALSE,

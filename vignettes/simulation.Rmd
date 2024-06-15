@@ -47,7 +47,7 @@ At Iteration 0 (base iteration), iBART determines which of the primary features,
 ```{r iBART short}
 #### iBART ####
 iBART_sim <- iBART(X = X, y = y,
-                   head = colnames(X),
+                   name = colnames(X),
                    num_burn_in = 5000,                   # lower value for faster run
                    num_iterations_after_burn_in = 1000,  # lower value for faster run
                    num_permute_samples = 20,             # lower value for faster run
@@ -84,7 +84,7 @@ To save time, we cached the result of a complete run in `data("iBART_sim", packa
 
 ```{r iBART full, eval=FALSE}
 iBART_sim <- iBART(X = X, y = y,
-                   head = colnames(X),
+                   name = colnames(X),
                    opt = c("unary", "binary", "unary"), 
                    sin_cos = TRUE,
                    apply_pos_opt_on_neg_x = FALSE,

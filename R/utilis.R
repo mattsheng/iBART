@@ -22,7 +22,7 @@ scaleData <- function(data, standardize = TRUE) {
 }
 
 writeLogFunc <- function(data = NULL, K = 1, count = NULL, seed = NULL, out_sample = FALSE) {
-  K <- min(length(data$head_selected), K)
+  K <- min(length(data$name_selected), K)
 
   # Write outputs
   sink(file = paste0("output", count, ".txt"))
@@ -30,7 +30,7 @@ writeLogFunc <- function(data = NULL, K = 1, count = NULL, seed = NULL, out_samp
   cat(paste("iBART in-sample RMSE:", data$iBART_in_sample_RMSE, "\n"))
   if (out_sample) cat(paste("iBART out-sample RMSE:", data$iBART_out_sample_RMSE, "\n\n"))
   cat("Selected Descriptors: \n")
-  cat(data$head_selected, sep = "\n")
+  cat(data$name_selected, sep = "\n")
   if (!is.null(data$Lzero_models)) {
     for (k in 1:K) {
       cat("---------------- \n")
@@ -45,4 +45,36 @@ writeLogFunc <- function(data = NULL, K = 1, count = NULL, seed = NULL, out_samp
   }
   cat(paste("Time:", round(data$runtime, digits = 2)))
   sink()
+}
+
+
+dataprocessing <- function(data) {
+  data$X <- as.matrix(data$X)
+
+  # Remove NA's
+  na_idx <- apply(data$X, 2, function(x) any(is.na(x)))
+  data$X <- as.matrix(data$X[, !na_idx])
+  data$name <- data$name[!na_idx]
+  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !na_idx])
+
+  # Remove duplicated data
+  dup_idx <- duplicated(data$X, MARGIN = 2)
+  data$X <- as.matrix(data$X[, !dup_idx])
+  data$name <- data$name[!dup_idx]
+  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !dup_idx])
+
+  # Remove columns with -Inf, Inf
+  inf_idx <- apply(data$X, 2, function(x) any(abs(x) == Inf))
+  data$X <- as.matrix(data$X[, !inf_idx])
+  data$name <- data$name[!inf_idx]
+  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !inf_idx])
+
+  # Remove columns full of zero
+  zero_idx <- apply(data$X, 2, function(x) all(x == 0))
+  data$X <- as.matrix(data$X[, !zero_idx])
+  data$name <- data$name[!zero_idx]
+  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !zero_idx])
+  colnames(data$X) <- data$name
+
+  return(data)
 }

@@ -8,7 +8,7 @@
 #'
 #' @param X Input matrix of primary features \eqn{X}.
 #' @param y Response variable \eqn{y}.
-#' @param head Optional: name of primary features.
+#' @param name Optional: name of primary features.
 #' @param unit Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_unit()} for details.
 #' @param BART_var_sel_method Variable selection criterion used in BART. Three options are available: (1) "global_se", (2) "global_max", (3) "local". The default is "global_se". See \code{var_selection_by_permute} in \code{R} package \code{bartMachine} for more detail.
 #' @param num_trees BART parameter: number of trees to be grown in the sum-of-trees model. If you want different values for each iteration of BART, input a vector of length equal to number of iterations. Default is \code{num_trees = 20}.
@@ -68,7 +68,7 @@
 
 
 iBART <- function(X = NULL, y = NULL,
-                  head = NULL,
+                  name = NULL,
                   unit = NULL,
                   BART_var_sel_method = "global_se",
                   num_trees = 20,
@@ -172,10 +172,11 @@ iBART <- function(X = NULL, y = NULL,
   }
 
   # Get column names if primary feature names are not provided
-  if (is.null(head)) {
-    colnames(X) <- head <- paste("V", seq(from = 1, to = ncol(X), by = 1), sep = "")
-  } else {
-    colnames(X) <- head
+  if (is.null(name)) name <- paste("V", seq(from = 1, to = ncol(X), by = 1), sep = "")
+
+  # Remove names from unit
+  if (!is.null(unit)) {
+    colnames(unit) <- rownames(unit) <- NULL
   }
 
   if (!is.null(seed)) set.seed(seed)
@@ -193,20 +194,19 @@ iBART <- function(X = NULL, y = NULL,
     # Remove X cols that are independent of Y
     indep_idx <- is.na(cor_mat)
     X <- as.matrix(X[, !indep_idx])
-    head <- head[!indep_idx]
-    if (!is.null(unit)) unit <- unit[!indep_idx]
+    name <- name[!indep_idx]
+    if (!is.null(unit)) unit <- as.matrix(unit[, !indep_idx])
   }
 
   #### iBART descriptor generation and selection ####
   if (verbose) cat("Start iBART descriptor generation and selection... \n")
-  dat <- list(y = y, X = X, head = head, unit = unit,
-              X_selected = NULL, head_selected = NULL, unit_selected = NULL,
+  dat <- list(y = y, X = X, name = name, unit = unit,
+              X_selected = NULL, name_selected = NULL, unit_selected = NULL,
               # pos_idx_old = NULL, pos_idx_new = NULL,
               iBART_gen_size = c(px), iBART_sel_size = c(),
               iBART_in_sample_RMSE = NULL,
               iBART_out_sample_RMSE = NULL,
-              no_sel_count = 0,
-              error = FALSE)
+              no_sel_count = 0)
 
   #### Pre Screen ? ####
   if ((!pre_screen) & (hold == 0)) {
@@ -237,16 +237,9 @@ iBART <- function(X = NULL, y = NULL,
                      seed = seed,
                      iter = i)
 
-    # If iBART didn't select anything in 2 consecutive iterations
-    if (dat$no_sel_count > 1) {
-      message("BART didn't select anything in 2 consecutive iterations.")
-      break
-    }
-
     ### Feature engineering via operations ###
     dat <- descriptorGenerator(dat, opt[i], sin_cos, apply_pos_opt_on_neg_x, verbose)
     dat$iBART_gen_size <- c(dat$iBART_gen_size, ncol(dat$X))
-    if (dat$error) break
   }
 
   if (verbose) {

@@ -7,7 +7,7 @@
 iBART(
   X = NULL,
   y = NULL,
-  head = NULL,
+  name = NULL,
   unit = NULL,
   BART_var_sel_method = "global_se",
   num_trees = 20,
@@ -45,9 +45,9 @@ iBART(
 
 \item{y}{Response variable \eqn{y}.}
 
-\item{head}{Optional: name of primary features.}
+\item{name}{Optional: name of primary features.}
 
-\item{unit}{Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_dimension()} for details.}
+\item{unit}{Optional: units and their respective dimensions of primary features. This is used to perform dimension analysis for generated descriptors to avoid generating unphyiscal descriptors, such as \eqn{size + size^2}. See \code{generate_unit()} for details.}
 
 \item{BART_var_sel_method}{Variable selection criterion used in BART. Three options are available: (1) "global_se", (2) "global_max", (3) "local". The default is "global_se". See \code{var_selection_by_permute} in \code{R} package \code{bartMachine} for more detail.}
 

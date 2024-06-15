@@ -34,10 +34,12 @@ LASSO <- function(data = NULL, train_idx = NULL, type.measure = "deviance",
 
   # Check if LASSO selected any variable
   if (length(pos_idx) == 0) {
-    message("LASSO did not select any variable, trying different parameters...")
+    message("LASSO did not select any variable...")
     message("Running least squares instead...")
     lm.data <- data.frame(y = dat$y_train, dat$X_train)
     data$iBART_model <- lm(y ~ ., data = lm.data)
+    data$coefficients <- coef(data$iBART_model)
+    names(data$coefficients) <- c("Intercept", data$descriptor_names)
 
     # In-sample
     yhat <- predict(data$iBART_model, newx = dat$X_train)
@@ -49,22 +51,22 @@ LASSO <- function(data = NULL, train_idx = NULL, type.measure = "deviance",
       data$iBART_out_sample_RMSE <- sqrt(mean((yhat - dat$y_test)^2))
     }
 
-    data$X_selected <- as.matrix(data$X)
-    data$head_selected <- data$head
+    data$X_selected <- data$X
+    data$name_selected <- data$name
     if (!is.null(data$unit)) data$unit_selected <- data$unit
-    colnames(data$X_selected) <- colnames(data$X) <- data$head_selected # new
+    colnames(data$X_selected) <- colnames(data$X) <- data$name_selected # new
     data$iBART_sel_size <- c(data$iBART_sel_size, ncol(data$X_selected))
-    data$descriptor_names <- data$head_selected
+    data$descriptor_names <- data$name_selected
 
   } else {
     data$X_selected <- data$X <- as.matrix(data$X[, pos_idx]) # in case length(pos_idx) == 1
-    data$head_selected <- data$head <- data$head[pos_idx]
-    if (!is.null(data$unit)) data$unit_selected <- data$unit <- data$unit[pos_idx]
-    colnames(data$X_selected) <- colnames(data$X) <- data$head_selected # new
+    data$name_selected <- data$name <- data$name[pos_idx]
+    if (!is.null(data$unit)) data$unit_selected <- data$unit <- as.matrix(data$unit[, pos_idx])
+    colnames(data$X_selected) <- colnames(data$X) <- data$name_selected # new
     data$iBART_sel_size <- c(data$iBART_sel_size, length(pos_idx))
 
     data$iBART_model <- cvfit
-    data$descriptor_names <- data$head_selected
+    data$descriptor_names <- data$name_selected
     intercept <- beta[1]
     beta <- beta[-1]
     beta <- beta[beta != 0]
@@ -81,7 +83,6 @@ LASSO <- function(data = NULL, train_idx = NULL, type.measure = "deviance",
     data$X_train <- dat$X_train
     data$X_test <- dat$X_test
   }
-
 
   return(data)
 }

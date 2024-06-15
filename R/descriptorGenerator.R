@@ -7,12 +7,12 @@ descriptorGenerator <- function(data = NULL, opt = "binary", sin_cos = FALSE, ap
     data <- unary(data, sin_cos, apply_pos_opt_on_neg_x)
   } else {
     if (verbose) cat("Constructing descriptors using all operators... \n")
-    descriptor_unary <- unary(data, sin_cos, apply_pos_opt_on_neg_x)
-    descriptor_binary <- binary(data, sin_cos)
-    data$X <- cbind(descriptor_unary$X, descriptor_binary$X)
-    data$head <- c(descriptor_unary$head, descriptor_binary$head)
-    data$unit <- c(descriptor_unary$unit, descriptor_binary$unit)
-    # data <- dataprocessing(data)
+    data_unary <- unary(data, sin_cos, apply_pos_opt_on_neg_x)
+    data_binary <- binary(data, sin_cos)
+    data$X <- cbind(data_unary$X, data_binary$X)
+    data$name <- c(data_unary$name, data_binary$name)
+    data$unit <- cbind(data_unary$unit, data_binary$unit)
+    data <- dataprocessing(data)
   }
   return(data)
 }
