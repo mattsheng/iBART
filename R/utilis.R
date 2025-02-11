@@ -15,8 +15,8 @@ scaleData <- function(data, standardize = TRUE) {
   if (standardize) {
     train_col_mean <- colMeans(data$X_train, na.rm = TRUE)
     train_col_sd <- apply(data$X_train, 2, sd, na.rm = TRUE)
-    data$X_train <- scale(data$X_train)
-    data$X_test <- if (is.null(data$X_test)) NULL else sapply(1:ncol(data$X_test), function(k) (data$X_test[, k] - train_col_mean[k]) / train_col_sd[k])
+    data$X_train <- scale(data$X_train, center = train_col_mean, scale = train_col_sd)
+    data$X_test <- if (is.null(data$X_test)) NULL else scale(data$X_test, center = train_col_mean, scale = train_col_sd)
   }
   return(data)
 }
@@ -69,11 +69,11 @@ dataprocessing <- function(data) {
   data$name <- data$name[!inf_idx]
   if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !inf_idx])
 
-  # Remove columns full of zero
-  zero_idx <- apply(data$X, 2, function(x) all(x == 0))
-  data$X <- as.matrix(data$X[, !zero_idx])
-  data$name <- data$name[!zero_idx]
-  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !zero_idx])
+  # Remove constant columns
+  const_idx <- apply(data$X, 2, function(x) sd(x) == 0)
+  data$X <- as.matrix(data$X[, !const_idx])
+  data$name <- data$name[!const_idx]
+  if (!is.null(data$unit)) data$unit <- as.matrix(data$unit[, !const_idx])
   colnames(data$X) <- data$name
 
   return(data)

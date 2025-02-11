@@ -1,3 +1,8 @@
+# iBART 1.0.3
+
+* Removed standardization prior to L-zero model fitting.
+* In `dataprocessing`, constant predictors will be removed.
+
 # iBART 1.0.2
 
 * Improved unit comparison

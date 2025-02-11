@@ -1,6 +1,6 @@
 Package: iBART
 Title: Iterative Bayesian Additive Regression Trees Descriptor Selection Method
-Version: 1.0.2
+Version: 1.0.3
 Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre", "cph"), email = "sy53@rice.edu", comment = c(ORCID = "0000-0001-8767-2595")),
              person("Meng", "Li", role = "aut", email = "meng@rice.edu"))
 Maintainer: Shengbin Ye <sy53@rice.edu>

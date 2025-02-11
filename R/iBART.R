@@ -105,79 +105,78 @@ iBART <- function(X = NULL, y = NULL,
   px <- ncol(X)
 
   #### Check inputs ####
-  if (iter < 1) stop("Length of opt must be at least 1.")
+  if (iter < 1) stop("Length of `opt` must be >= 1.")
 
-  if ((is.null(X)) || is.null(y)) stop("You need to give iBART a training set by specifying X and y \n")
+  if (is.null(X) | is.null(y)) stop("You need to give iBART a training set by specifying X and y.")
 
-  if (!is.matrix(X)) stop("The training data X must be a matrix", call. = FALSE)
+  if (!(is.matrix(X) | is.data.frame(X))) stop("X must be a matrix or a data.frame", call. = FALSE)
+  if (is.data.frame(X)) X <- as.matrix(X)
 
-  if (px == 0) stop("Your data matrix must have at least one predictor.")
+  if (px == 0) stop("X must have >= 1 column.")
 
-  if (nx == 0) stop("Your data matrix must have at least one observation.")
+  if (nx == 0) stop("X must have >= 1 row.")
 
-  if (length(y) != nx) stop("The number of responses must be equal to the number of observations in the training data X.")
+  if (length(y) != nx) stop("Different number of observations in y and X!")
 
   if (!(BART_var_sel_method %in% c("global_se", "global_max", "local"))) {
-    stop("BART_var_sel_method must be \"global_se\", \"global_max\", or \"local\"!!")
+    stop("BART_var_sel_method must be \"global_se\", \"global_max\", or \"local\"")
   }
 
   if (length(num_trees) == 1) {
     num_trees <- rep(num_trees, iter)
-  } else if ((length(num_trees) > 1) && (length(num_trees) != iter)) {
-    stop("Length of number of trees must equal to number of iterations!")
+  } else if ((length(num_trees) > 1) & (length(num_trees) != iter)) {
+    stop("Length of `num_trees` must equal to length of `opt` or 1!")
   }
 
   if (length(num_burn_in) == 1) {
     num_burn_in <- rep(num_burn_in, iter)
-  } else if ((length(num_burn_in) > 1) && (length(num_burn_in) != iter)) {
-    stop("Length of number of burn-in must equal to number of iterations!")
+  } else if ((length(num_burn_in) > 1) & (length(num_burn_in) != iter)) {
+    stop("Length of `num_burn_in` must equal to length of `opt` or 1!")
   }
 
   if (length(num_iterations_after_burn_in) == 1) {
     num_iterations_after_burn_in <- rep(num_iterations_after_burn_in, iter)
-  } else if ((length(num_iterations_after_burn_in) > 1) && (length(num_iterations_after_burn_in) != iter)) {
-    stop("Length of number of iteration after burn-in must equal to number of iterations!")
+  } else if ((length(num_iterations_after_burn_in) > 1) & (length(num_iterations_after_burn_in) != iter)) {
+    stop("Length of `num_iterations_after_burn_in` must equal to length of `opt` or 1!")
   }
 
   if (length(num_reps_for_avg) == 1) {
     num_reps_for_avg <- rep(num_reps_for_avg, iter)
-  } else if ((length(num_reps_for_avg) > 1) && (length(num_reps_for_avg) != iter)) {
-    stop("Length of number of replicates for average must equal to number of iterations!")
+  } else if ((length(num_reps_for_avg) > 1) & (length(num_reps_for_avg) != iter)) {
+    stop("Length of `num_reps_for_avg` must equal to length of `opt` or 1!")
   }
 
   if (length(num_permute_samples) == 1) {
     num_permute_samples <- rep(num_permute_samples, iter)
-  } else if ((length(num_permute_samples) > 1) && (length(num_permute_samples) != iter)) {
-    stop("Length of number of permutations of the response must equal to number of iterations!")
+  } else if ((length(num_permute_samples) > 1) & (length(num_permute_samples) != iter)) {
+    stop("Length of `num_permute_samples` must equal to length of `opt` or 1!")
   }
 
-  if ((!is.numeric(hold)) || (hold > iter)) stop("hold must be an integer less than length of opt!")
+  if ((!is.numeric(hold)) | (hold > iter)) stop("`hold` must be an integer < length of `opt`!")
 
-  if (!is.logical(out_sample)) stop("out_sample must be a logical variable.")
+  if (!is.logical(out_sample)) stop("`out_sample` must be a logical variable.")
 
-  if ((!is.numeric(train_ratio)) || (train_ratio <= 0) || (train_ratio > 1)){
+  if ((!is.numeric(train_ratio)) | (train_ratio <= 0) | (train_ratio > 1)){
     stop("train_ratio must be a number between 0 and 1.")
   }
 
-  if (!is.logical(Lzero)) stop("Lzero must be a logical variable.")
+  if (!is.logical(Lzero)) stop("`Lzero` must be a logical variable.")
 
-  if (!is.logical(writeLog)) stop("writeLog must be a logical variable.")
+  if (!is.logical(writeLog)) stop("`writeLog` must be a logical variable.")
 
   if (!is.null(train_idx)) {
     if (!is.numeric(train_idx)) {
-      stop("train_idx must be a numerical vector.")
+      stop("`train_idx` must be a numerical vector.")
     } else if (length(train_idx) > nrow(X)) {
-      stop("The length of train_idx must be <= nrow(X).")
+      stop("The length of `train_idx` must be <= nrow(X).")
     }
   }
 
   # Get column names if primary feature names are not provided
-  if (is.null(name)) name <- paste("V", seq(from = 1, to = ncol(X), by = 1), sep = "")
+  if (is.null(name)) name <- paste0("x.", 1:px)
 
   # Remove names from unit
-  if (!is.null(unit)) {
-    colnames(unit) <- rownames(unit) <- NULL
-  }
+  if (!is.null(unit)) colnames(unit) <- rownames(unit) <- NULL
 
   if (!is.null(seed)) set.seed(seed)
 

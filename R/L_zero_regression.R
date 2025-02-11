@@ -3,7 +3,7 @@
 L_zero <- function(data = NULL, train_idx = NULL, standardize = TRUE, K = 5, parallel = FALSE, aic = FALSE, verbose = TRUE) {
   data$X <- as.matrix(data$X)
   dat <- trainingSplit(X = data$X, y = data$y, train_idx = train_idx)
-  dat <- scaleData(data = dat, standardize = standardize)
+  # dat <- scaleData(data = dat, standardize = standardize)
 
   K <- min(K, ncol(dat$X_train))
   data$Lzero_models <- data$Lzero_names <- list()

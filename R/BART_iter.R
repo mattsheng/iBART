@@ -15,9 +15,10 @@ BART_iter <- function(data = NULL,
   # data$iBART_gen_size <- c(data$iBART_gen_size, ncol(data$X))
   dat <- trainingSplit(X = data$X, y = data$y, train_idx = train_idx)
 
+
   # bartMachine only takes data.frame
-  dat$X_train <- if (standardize) as.data.frame(scale(dat$X_train)) else as.data.frame(dat$X_train)
-  bart_machine <- bartMachine(X = dat$X_train,
+  X_train_scale <- if (standardize) as.data.frame(scale(dat$X_train)) else as.data.frame(dat$X_train)
+  bart_machine <- bartMachine(X = X_train_scale,
                               y = dat$y_train,
                               num_trees = num_trees,
                               num_burn_in = num_burn_in,
