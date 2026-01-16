@@ -1,3 +1,7 @@
+# iBART 1.0.3.1
+
+* Add support for `bartMachine` v1.4
+
 # iBART 1.0.3
 
 * Removed standardization prior to L-zero model fitting.

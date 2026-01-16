@@ -20,7 +20,7 @@ Before loading the package, we should allocate enough memory for Java. Here we a
 ```{r}
 set.seed(123)
 # Allocate 10GB of memory for Java. Must be called before library(iBART)
-options(java.parameters = "-Xmx10g") 
+options(java.parameters = c("-Xmx10g", "--add-modules=jdk.incubator.vector", "-XX:+UseZGC")) 
 library(iBART)
 ```
 

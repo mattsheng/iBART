@@ -1,9 +1,9 @@
 Package: iBART
 Title: Iterative Bayesian Additive Regression Trees Descriptor Selection Method
-Version: 1.0.3
-Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre", "cph"), email = "sy53@rice.edu", comment = c(ORCID = "0000-0001-8767-2595")),
+Version: 1.0.3.1
+Authors@R: c(person("Shengbin", "Ye", role = c("aut", "cre", "cph"), email = "sy21@northwestern.edu", comment = c(ORCID = "0000-0001-8767-2595")),
              person("Meng", "Li", role = "aut", email = "meng@rice.edu"))
-Maintainer: Shengbin Ye <sy53@rice.edu>
+Maintainer: Shengbin Ye <sy21@northwestern.edu>
 Description: A statistical method based on Bayesian Additive Regression Trees with Global 
     Standard Error Permutation Test (BART-G.SE) for descriptor selection 
     and symbolic regression. It finds the symbolic formula of the regression function 
@@ -15,8 +15,8 @@ Encoding: UTF-8
 LazyData: true
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Depends: R (>= 4.0.0)
 Imports: bartMachine (>= 1.2.6), glmnet (>= 4.1-1), foreach, stats
 Suggests: knitr, rmarkdown, ggplot2, ggpubr
-SystemRequirements: Java (>= 8.0)
+SystemRequirements: Java (>= 21.0)

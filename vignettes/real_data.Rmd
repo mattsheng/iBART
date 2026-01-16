@@ -26,7 +26,7 @@ Before loading the **iBART** package, we must allocate enough memory to Java to 
 
 ```{r load package}
 # Allocate 10GB of memory for Java. Must be called before library(iBART)
-options(java.parameters = "-Xmx10g") 
+options(java.parameters = c("-Xmx10g", "--add-modules=jdk.incubator.vector", "-XX:+UseZGC"))
 library(iBART)
 ```
 Next, we load the real data set and examine what data are needed to run iBART.

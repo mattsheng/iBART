@@ -6,13 +6,21 @@
 
 This is a R-Java implementation of iBART found in Ye, Senftle, & Li [Operator-induced structural variable selection for identifying materials genes](https://www.tandfonline.com/doi/abs/10.1080/01621459.2023.2294527). This R package depends on the R package [`bartMachine`](https://github.com/kapelner/bartMachine) for its BART-G.SE variable selection implementation.
 
+## Important
+
+The usage of `iBART` R package depends on the version of `bartMachine` R package you installed.
+
+* For `bartMachine` version >=1.4, *before* you load the package, you must set *both* the memory and the special speedup module and newer GC params are also recommended: `options(java.parameters = c("-Xmx20g", "--add-modules=jdk.incubator.vector", "-XX:+UseZGC"))`. If you don't do this you will get errors such as `Error in .jnew("bartMachine.bartMachineRegressionMultThread") : java.lang.NoClassDefFoundError: jdk/incubator/vector/Vector`.
+
+* For `bartMachine` version <1.4, you must set the memory before `options(java.parameters = "-Xmx20g")` to set a larger amount of RAM than the default of 500MB which will get you intro trouble. Only after setting these options, then invoke `library(bartMachine)`. If you don't do this YOU WILL GET OUT OF MEMORY ERRORS OR STUFF THAT LOOKS LIKE THIS `Error in validObject(.Object) : invalid class “jobjRef” object: invalid object for slot "jobj" in class "jobjRef": got class "NULL", should be or extend class "externalptr"`.
+
 ## Installation
 
 Before installing the iBART package in R, you first need to install Java JDK and rJava R package. 
 
 ### Install Java JDK (not JRE)
 
-Download [Java 17 JDK or above](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) and install it properly. Then run `R CMD javareconf` from the command line to configure Java in R. iBART requires bartMachine and rJava which require Java JDK; Java JRE won't work!
+Download [Java 21 JDK or above](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html) and install it properly. Then run `R CMD javareconf` from the command line to configure Java in R. iBART requires bartMachine and rJava which require Java JDK; Java JRE won't work!
 
 ### Install rJava
 
@@ -21,7 +29,6 @@ Run `install.packages("rJava", INSTALL_opts = "--no-multriarch")` within R. To r
 ### Install bartMachine
 
 Run `install.packages("bartMachine", INSTALL_opts = "--no-multiarch")` within R. To reproduce results in the paper, please install `bartMachineJARs 1.1` and `bartMachine 1.2.6`. If you experience error, please see the [bartMachine repo](https://github.com/kapelner/bartMachine) for detailed instructions.
-
 
 ### Install glmnet
 
@@ -42,7 +49,9 @@ We use the simulation model in Section 3.4 of [our paper](https://arxiv.org/abs/
 
 ```
 set.seed(123)
-options(java.parameters = "-Xmx10g") # Allocate 10GB of memory for Java
+# Allocate 10GB of memory for Java
+options(java.parameters = c("-Xmx10g", "--add-modules=jdk.incubator.vector", "-XX:+UseZGC")) # for bartMachine >=v1.4
+# options(java.parameters = "-Xmx10g") # for bartMachine <v1.4
 library(iBART)
 
 n <- 250
